@@ -176,7 +176,10 @@
      * @returns {Promise<Array>} Array of match/fixture objects
      */
     async fetchMatches(filters = {}) {
-      const cacheKey = 'matches_' + JSON.stringify(filters);
+      // Cache key bao gồm cả ngày (UTC) để mỗi ngày là cache mới — tránh cache cũ giữ status 'scheduled'
+      // cho các trận đã qua giờ.
+      const todayKey = new Date().toISOString().slice(0, 10);
+      const cacheKey = 'matches_' + todayKey + '_' + JSON.stringify(filters);
       const cached = this.getCached(cacheKey);
       if (cached) {
         console.log('[DataService] Trả về dữ liệu trận đấu từ bộ nhớ đệm');
@@ -217,6 +220,9 @@
       if (!matches) {
         matches = this.getEmbeddedMatches(filters);
         console.log(`[DataService] Sử dụng dữ liệu nhúng: ${matches.length} trận đấu`);
+      } else {
+        // API data — cũng áp dụng auto-close để đồng bộ
+        matches = this.autoClosePastMatches(matches);
       }
 
       // Cache the result
@@ -224,6 +230,36 @@
       this.setCache(cacheKey, matches, ttl);
 
       return matches;
+    }
+
+    /**
+     * Auto-close: các trận đã qua giờ mà vẫn 'scheduled' → chuyển 'finished' với tỉ số tạm 0-0
+     * và đánh dấu _autoClosed=true để sau này dễ lọc / cập nhật tỉ số thật.
+     * @param {Array} matches - Danh sách trận
+     * @returns {Array} Danh sách đã được auto-close
+     */
+    autoClosePastMatches(matches) {
+      const now = Date.now();
+      let closedCount = 0;
+      const result = matches.map(m => {
+        const ts = m.utcDate ? new Date(m.utcDate).getTime() : null;
+        if (m.status === 'scheduled' && ts != null && !isNaN(ts) && ts < now) {
+          closedCount++;
+          return {
+            ...m,
+            status: 'finished',
+            score: { home: 0, away: 0 },
+            homeScore: 0,
+            awayScore: 0,
+            _autoClosed: true
+          };
+        }
+        return m;
+      });
+      if (closedCount > 0) {
+        console.log(`[DataService] Auto-close: đã đóng ${closedCount} trận quá giờ`);
+      }
+      return result;
     }
 
     /**
@@ -344,6 +380,9 @@
           referee: f.referee || null
         };
       });
+
+      // Auto-close các trận đã qua giờ nhưng vẫn 'scheduled' (an toàn — chỉ đánh dấu, không tự đặt tỉ số thật)
+      matches = this.autoClosePastMatches(matches);
 
       // Apply filters
       if (filters.status) {

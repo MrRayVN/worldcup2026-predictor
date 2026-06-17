@@ -1385,11 +1385,11 @@ window.WC2026_DATA = {
     // ── June 16 ──────────────────────────────────────────────────
     // Group J
     { id: 17, matchday: 1, group: 'J', round: 'Group Stage', date: '2026-06-16T13:00:00-04:00', homeTeam: 'ARG', awayTeam: 'ALG', stadium: 'Hard Rock Stadium',   city: 'Miami',            status: 'finished',  homeScore: 3, awayScore: 0, referee: 'François Letexier' },
-    // Group I
-    { id: 18, matchday: 1, group: 'I', round: 'Group Stage', date: '2026-06-16T16:00:00-04:00', homeTeam: 'FRA', awayTeam: 'SEN', stadium: 'AT&T Stadium',        city: 'Dallas',           status: 'scheduled', homeScore: null, awayScore: null, referee: 'Szymon Marciniak' },
-    { id: 19, matchday: 1, group: 'I', round: 'Group Stage', date: '2026-06-16T19:00:00-04:00', homeTeam: 'IRQ', awayTeam: 'NOR', stadium: 'Mercedes-Benz Stadium', city: 'Atlanta',        status: 'scheduled', homeScore: null, awayScore: null, referee: 'Ma Ning' },
+    // Group I — auto-closed (chưa có tỉ số thật, cập nhật tay khi có dữ liệu)
+    { id: 18, matchday: 1, group: 'I', round: 'Group Stage', date: '2026-06-16T16:00:00-04:00', homeTeam: 'FRA', awayTeam: 'SEN', stadium: 'AT&T Stadium',        city: 'Dallas',           status: 'finished', homeScore: 0, awayScore: 0, referee: 'Szymon Marciniak', _autoClosed: true },
+    { id: 19, matchday: 1, group: 'I', round: 'Group Stage', date: '2026-06-16T19:00:00-04:00', homeTeam: 'IRQ', awayTeam: 'NOR', stadium: 'Mercedes-Benz Stadium', city: 'Atlanta',        status: 'finished', homeScore: 0, awayScore: 0, referee: 'Ma Ning',          _autoClosed: true },
     // Group J
-    { id: 20, matchday: 1, group: 'J', round: 'Group Stage', date: '2026-06-16T21:00:00-04:00', homeTeam: 'AUT', awayTeam: 'JOR', stadium: 'Gillette Stadium',    city: 'Boston',           status: 'scheduled', homeScore: null, awayScore: null, referee: 'Victor Gomes' },
+    { id: 20, matchday: 1, group: 'J', round: 'Group Stage', date: '2026-06-16T21:00:00-04:00', homeTeam: 'AUT', awayTeam: 'JOR', stadium: 'Gillette Stadium',    city: 'Boston',           status: 'finished', homeScore: 0, awayScore: 0, referee: 'Victor Gomes',      _autoClosed: true },
 
     // ── June 17 ──────────────────────────────────────────────────
     // Group K
