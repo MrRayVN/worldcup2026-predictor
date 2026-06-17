@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dự Đoán World Cup 2026 | AI Football Predictor</title>
+  <meta name="description" content="Công cụ dự đoán kết quả World Cup 2026 bằng trí tuệ nhân tạo. Phân tích 20 yếu tố, xác suất thắng thua, bảng đấu và thống kê chi tiết cho tất cả 48 đội tuyển.">
+  <meta name="keywords" content="World Cup 2026, dự đoán bóng đá, AI predictor, phân tích trận đấu, bảng xếp hạng">
+  <meta name="author" content="WC2026 Predictor">
+  <meta property="og:title" content="Dự Đoán World Cup 2026 | AI Football Predictor">
+  <meta property="og:description" content="Dự đoán kết quả World Cup 2026 với AI - Phân tích chi tiết 20 yếu tố cho mỗi trận đấu">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app">
+  <!-- ═══════════════════════════════════════════ HEADER ═══════════════════════════════════════════ -->
+  <header id="main-header">
+    <div class="header-inner">
+      <div id="logo" class="logo">
+        <span class="logo-icon">⚽</span>
+        <span class="logo-text">WC2026 <span class="logo-highlight">PREDICTOR</span></span>
+      </div>
+
+      <nav id="main-nav" class="main-nav">
+        <button id="tab-btn-dashboard" class="nav-tab active" data-tab="dashboard">
+          <span class="nav-icon">📊</span>
+          <span class="nav-label">Dashboard</span>
+        </button>
+        <button id="tab-btn-prediction" class="nav-tab" data-tab="prediction">
+          <span class="nav-icon">🔮</span>
+          <span class="nav-label">Dự Đoán</span>
+        </button>
+        <button id="tab-btn-groups" class="nav-tab" data-tab="groups">
+          <span class="nav-icon">🏆</span>
+          <span class="nav-label">Bảng Đấu</span>
+        </button>
+        <button id="tab-btn-analytics" class="nav-tab" data-tab="analytics">
+          <span class="nav-icon">📈</span>
+          <span class="nav-label">Phân Tích</span>
+        </button>
+      </nav>
+
+      <div id="countdown-widget" class="countdown-widget">
+        <span class="countdown-label">Trận tiếp theo</span>
+        <div id="countdown-timer" class="countdown-timer">
+          <div class="countdown-segment">
+            <span id="countdown-hours" class="countdown-value">00</span>
+            <span class="countdown-unit">giờ</span>
+          </div>
+          <span class="countdown-separator">:</span>
+          <div class="countdown-segment">
+            <span id="countdown-minutes" class="countdown-value">00</span>
+            <span class="countdown-unit">phút</span>
+          </div>
+          <span class="countdown-separator">:</span>
+          <div class="countdown-segment">
+            <span id="countdown-seconds" class="countdown-value">00</span>
+            <span class="countdown-unit">giây</span>
+          </div>
+        </div>
+        <span id="countdown-match-info" class="countdown-match-info"></span>
+      </div>
+
+      <button id="mobile-menu-toggle" class="mobile-menu-toggle" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════ MAIN ═══════════════════════════════════════════ -->
+  <main id="main-content">
+
+    <!-- ────────────── TAB: DASHBOARD ────────────── -->
+    <section id="dashboard" class="tab-content active">
+      <div class="section-header">
+        <h1 class="section-title">
+          <span class="title-icon">🏟️</span>
+          Tổng Quan Giải Đấu
+        </h1>
+        <p class="section-subtitle">Cập nhật trực tiếp kết quả và lịch thi đấu World Cup 2026</p>
+      </div>
+
+      <!-- Tournament Progress -->
+      <div id="tournament-progress" class="tournament-progress card glass-card">
+        <h3 class="card-title">Tiến Trình Giải Đấu</h3>
+        <div class="progress-bar-container">
+          <div id="tournament-progress-bar" class="progress-bar">
+            <div id="tournament-progress-fill" class="progress-fill"></div>
+          </div>
+          <span id="tournament-progress-text" class="progress-text">0%</span>
+        </div>
+        <div id="tournament-stats-row" class="stats-row">
+          <div class="stat-item">
+            <span class="stat-value" id="stat-matches-played">0</span>
+            <span class="stat-label">Đã Đấu</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value" id="stat-total-matches">104</span>
+            <span class="stat-label">Tổng Trận</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value" id="stat-goals-scored">0</span>
+            <span class="stat-label">Bàn Thắng</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value" id="stat-current-stage">Bảng Đấu</span>
+            <span class="stat-label">Giai Đoạn</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Matches -->
+      <div id="live-matches-section" class="matches-section">
+        <h2 class="subsection-title">
+          <span class="live-dot"></span>
+          Trận Đấu Trực Tiếp
+        </h2>
+        <div id="live-matches-grid" class="matches-grid">
+          <!-- Populated by JS -->
+        </div>
+        <div id="live-matches-empty" class="empty-state" style="display:none;">
+          <span class="empty-icon">📺</span>
+          <p>Hiện không có trận đấu trực tiếp</p>
+        </div>
+      </div>
+
+      <!-- Recent Results -->
+      <div id="recent-matches-section" class="matches-section">
+        <h2 class="subsection-title">🏁 Kết Quả Gần Đây</h2>
+        <div id="recent-matches-grid" class="matches-grid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Upcoming Matches -->
+      <div id="upcoming-matches-section" class="matches-section">
+        <h2 class="subsection-title">📅 Lịch Thi Đấu Sắp Tới</h2>
+        <div id="upcoming-matches-grid" class="matches-grid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ────────────── TAB: PREDICTION ────────────── -->
+    <section id="prediction" class="tab-content">
+      <div class="section-header">
+        <h1 class="section-title">
+          <span class="title-icon">🔮</span>
+          Dự Đoán Trận Đấu
+        </h1>
+        <p class="section-subtitle">Phân tích AI với 20 yếu tố để dự đoán kết quả chính xác nhất</p>
+      </div>
+
+      <!-- Match Selector -->
+      <div id="match-selector" class="match-selector card glass-card">
+        <h3 class="card-title">Chọn Trận Đấu</h3>
+        <div class="selector-controls">
+          <div class="select-wrapper">
+            <label for="matchday-filter" class="select-label">Vòng đấu:</label>
+            <select id="matchday-filter" class="custom-select">
+              <option value="all">Tất cả vòng đấu</option>
+            </select>
+          </div>
+          <div class="select-wrapper">
+            <label for="match-dropdown" class="select-label">Trận đấu:</label>
+            <select id="match-dropdown" class="custom-select">
+              <option value="">-- Chọn trận đấu --</option>
+            </select>
+          </div>
+        </div>
+        <div id="match-cards-grid" class="match-cards-grid">
+          <!-- Quick-pick match cards -->
+        </div>
+      </div>
+
+      <!-- Prediction Panel -->
+      <div id="prediction-panel" class="prediction-panel" style="display:none;">
+        <!-- Team Comparison Header -->
+        <div id="prediction-header" class="prediction-header card glass-card">
+          <div id="team-home" class="team-display">
+            <span id="home-flag" class="team-flag">🏳️</span>
+            <span id="home-name" class="team-name">Đội Nhà</span>
+            <span id="home-ranking" class="team-ranking">#0</span>
+          </div>
+          <div class="vs-container">
+            <span class="vs-label">VS</span>
+            <span id="match-date-display" class="match-date"></span>
+            <span id="match-venue-display" class="match-venue"></span>
+          </div>
+          <div id="team-away" class="team-display">
+            <span id="away-flag" class="team-flag">🏳️</span>
+            <span id="away-name" class="team-name">Đội Khách</span>
+            <span id="away-ranking" class="team-ranking">#0</span>
+          </div>
+        </div>
+
+        <!-- Predicted Score -->
+        <div id="predicted-score-section" class="predicted-score-section card glass-card">
+          <h3 class="card-title">Tỷ Số Dự Đoán</h3>
+          <div class="score-display">
+            <div class="score-team">
+              <span id="score-home-flag" class="score-flag">🏳️</span>
+              <span id="score-home-name" class="score-team-name">Đội Nhà</span>
+            </div>
+            <div class="score-numbers">
+              <span id="predicted-home-score" class="predicted-score">0</span>
+              <span class="score-dash">–</span>
+              <span id="predicted-away-score" class="predicted-score">0</span>
+            </div>
+            <div class="score-team">
+              <span id="score-away-flag" class="score-flag">🏳️</span>
+              <span id="score-away-name" class="score-team-name">Đội Khách</span>
+            </div>
+          </div>
+          <div id="prediction-confidence" class="confidence-badge">
+            <span>Độ tin cậy: </span>
+            <span id="confidence-value" class="confidence-value">0%</span>
+          </div>
+        </div>
+
+        <!-- Charts Row 1 -->
+        <div class="charts-row">
+          <!-- Win/Draw/Lose Probabilities -->
+          <div id="prob-bars-container" class="chart-container card glass-card">
+            <h3 class="card-title">Xác Suất Thắng/Hòa/Thua</h3>
+            <canvas id="prob-bars-chart" width="400" height="300"></canvas>
+            <div id="prob-bars-legend" class="chart-legend"></div>
+          </div>
+
+          <!-- Confidence Gauge -->
+          <div id="confidence-gauge-container" class="chart-container card glass-card">
+            <h3 class="card-title">Mức Độ Tin Cậy</h3>
+            <canvas id="confidence-gauge" width="300" height="300"></canvas>
+            <div id="gauge-value-display" class="gauge-value"></div>
+          </div>
+        </div>
+
+        <!-- Charts Row 2 -->
+        <div class="charts-row">
+          <!-- Radar Chart -->
+          <div id="radar-chart-container" class="chart-container card glass-card">
+            <h3 class="card-title">So Sánh Sức Mạnh</h3>
+            <canvas id="radar-chart" width="400" height="400"></canvas>
+            <div id="radar-chart-legend" class="chart-legend"></div>
+          </div>
+
+          <!-- Score Matrix Heatmap -->
+          <div id="score-heatmap-container" class="chart-container card glass-card">
+            <h3 class="card-title">Ma Trận Xác Suất Tỷ Số</h3>
+            <canvas id="score-heatmap" width="400" height="400"></canvas>
+          </div>
+        </div>
+
+        <!-- Charts Row 3 -->
+        <div class="charts-row">
+          <!-- Factors Breakdown -->
+          <div id="factors-chart-container" class="chart-container chart-container-wide card glass-card">
+            <h3 class="card-title">Phân Tích Yếu Tố</h3>
+            <canvas id="factors-chart" width="800" height="400"></canvas>
+          </div>
+        </div>
+
+        <!-- Additional Stats -->
+        <div id="additional-stats" class="additional-stats">
+          <div id="stat-over-under" class="stat-card card glass-card">
+            <h4 class="stat-card-title">Trên/Dưới 2.5 Bàn</h4>
+            <div class="stat-bar-group">
+              <div class="stat-bar-row">
+                <span class="stat-bar-label">Trên 2.5</span>
+                <div class="stat-bar-track">
+                  <div id="over25-bar" class="stat-bar-fill accent-teal" style="width:0%"></div>
+                </div>
+                <span id="over25-value" class="stat-bar-value">0%</span>
+              </div>
+              <div class="stat-bar-row">
+                <span class="stat-bar-label">Dưới 2.5</span>
+                <div class="stat-bar-track">
+                  <div id="under25-bar" class="stat-bar-fill accent-coral" style="width:0%"></div>
+                </div>
+                <span id="under25-value" class="stat-bar-value">0%</span>
+              </div>
+            </div>
+          </div>
+
+          <div id="stat-btts" class="stat-card card glass-card">
+            <h4 class="stat-card-title">Cả Hai Đội Ghi Bàn</h4>
+            <div class="stat-circular">
+              <div id="btts-circle" class="circular-progress">
+                <svg viewBox="0 0 100 100">
+                  <circle class="track" cx="50" cy="50" r="42"></circle>
+                  <circle id="btts-circle-fill" class="fill" cx="50" cy="50" r="42" stroke-dasharray="264" stroke-dashoffset="264"></circle>
+                </svg>
+                <span id="btts-value" class="circular-value">0%</span>
+              </div>
+              <div class="btts-labels">
+                <span id="btts-yes-label" class="btts-label">Có: 0%</span>
+                <span id="btts-no-label" class="btts-label">Không: 0%</span>
+              </div>
+            </div>
+          </div>
+
+          <div id="stat-expected-goals" class="stat-card card glass-card">
+            <h4 class="stat-card-title">Bàn Thắng Kỳ Vọng (xG)</h4>
+            <div class="xg-display">
+              <div class="xg-team">
+                <span id="xg-home-flag" class="xg-flag">🏳️</span>
+                <span id="xg-home-value" class="xg-value">0.00</span>
+              </div>
+              <div class="xg-divider">
+                <span>xG</span>
+              </div>
+              <div class="xg-team">
+                <span id="xg-away-flag" class="xg-flag">🏳️</span>
+                <span id="xg-away-value" class="xg-value">0.00</span>
+              </div>
+            </div>
+            <div id="xg-total" class="xg-total">
+              <span>Tổng xG: </span>
+              <span id="xg-total-value">0.00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 20 Factors Detail Table -->
+        <div id="factors-detail-section" class="factors-detail card glass-card">
+          <h3 class="card-title">Chi Tiết 20 Yếu Tố Phân Tích</h3>
+          <div class="table-responsive">
+            <table id="factors-table" class="factors-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Yếu Tố</th>
+                  <th id="factors-th-home">Đội Nhà</th>
+                  <th id="factors-th-away">Đội Khách</th>
+                  <th>Ảnh Hưởng</th>
+                  <th>Lợi Thế</th>
+                </tr>
+              </thead>
+              <tbody id="factors-table-body">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ────────────── TAB: GROUPS ────────────── -->
+    <section id="groups" class="tab-content">
+      <div class="section-header">
+        <h1 class="section-title">
+          <span class="title-icon">🏆</span>
+          Bảng Đấu World Cup 2026
+        </h1>
+        <p class="section-subtitle">12 bảng đấu với 48 đội tuyển – Xác suất vượt qua vòng bảng</p>
+      </div>
+
+      <div id="groups-grid" class="groups-grid">
+        <!-- Group A -->
+        <div id="group-A" class="group-card card glass-card">
+          <h3 class="group-title">Bảng A</h3>
+          <table class="group-table">
+            <thead>
+              <tr>
+                <th class="col-pos">#</th>
+                <th class="col-team">Đội</th>
+                <th class="col-stat">Đ</th>
+                <th class="col-stat">T</th>
+                <th class="col-stat">H</th>
+                <th class="col-stat">B</th>
+                <th class="col-stat">BT</th>
+                <th class="col-stat">BB</th>
+                <th class="col-stat">HS</th>
+                <th class="col-pts">Điểm</th>
+                <th class="col-prob">Vượt QVB</th>
+              </tr>
+            </thead>
+            <tbody id="group-A-body"></tbody>
+          </table>
+        </div>
+        <!-- Group B -->
+        <div id="group-B" class="group-card card glass-card">
+          <h3 class="group-title">Bảng B</h3>
+          <table class="group-table">
+            <thead>
+              <tr>
+                <th class="col-pos">#</th>
+                <th class="col-team">Đội</th>
+                <th class="col-stat">Đ</th>
+                <th class="col-stat">T</th>
+                <th class="col-stat">H</th>
+                <th class="col-stat">B</th>
+                <th class="col-stat">BT</th>
+                <th class="col-stat">BB</th>
+                <th class="col-stat">HS</th>
+                <th class="col-pts">Điểm</th>
+                <th class="col-prob">Vượt QVB</th>
+              </tr>
+            </thead>
+            <tbody id="group-B-body"></tbody>
+          </table>
+        </div>
+        <!-- Group C -->
+        <div id="group-C" class="group-card card glass-card">
+          <h3 class="group-title">Bảng C</h3>
+          <table class="group-table">
+            <thead>
+              <tr>
+                <th class="col-pos">#</th>
+                <th class="col-team">Đội</th>
+                <th class="col-stat">Đ</th>
+                <th class="col-stat">T</th>
+                <th class="col-stat">H</th>
+                <th class="col-stat">B</th>
+                <th class="col-stat">BT</th>
+                <th class="col-stat">BB</th>
+                <th class="col-stat">HS</th>
+                <th class="col-pts">Điểm</th>
+                <th class="col-prob">Vượt QVB</th>
+              </tr>
+            </thead>
+            <tbody id="group-C-body"></tbody>
+          </table>
+        </div>
+        <!-- Group D -->
+        <div id="group-D" class="group-card card glass-card">
+          <h3 class="group-title">Bảng D</h3>
+          <table class="group-table">
+            <thead>
+              <tr>
+                <th class="col-pos">#</th>
+                <th class="col-team">Đội</th>
+                <th class="col-stat">Đ</th>
+                <th class="col-stat">T</th>
+                <th class="col-stat">H</th>
+                <th class="col-stat">B</th>
+                <th class="col-stat">BT</th>
+                <th class="col-stat">BB</th>
+                <th class="col-stat">HS</th>
+                <th class="col-pts">Điểm</th>
+                <th class="col-prob">Vượt QVB</th>
+              </tr>
+            </thead>
+            <tbody id="group-D-body"></tbody>
+          </table>
+        </div>
+        <!-- Group E -->
+        <div id="group-E" class="group-card card glass-card">
+          <h3 class="group-title">Bảng E</h3>
+          <table class="group-table">
+            <thead>
+              <tr>
+                <th class="col-pos">#</th>
+                <th class="col-team">Đội</th>
+                <th class="col-stat">Đ</th>
+                <th class="col-stat">T</th>
+                <th class="col-stat">H</th>
+                <th class="col-stat">B</th>
+                <th class="col-stat">BT</th>
+                <th class="col-stat">BB</th>
+                <th class="col-stat">HS</th>
+                <th class="col-pts">Điểm</th>
+                <th class="col-prob">Vượt QVB</th>
+              </tr>
+            </thead>
+            <tbody id="group-E-body"></tbody>
+          </table>
+        </div>
+        <!-- Group F -->
+        <div id="group-F" class="group-card card glass-card">
+          <h3 class="group-title">Bảng F</h3>
+          <table class="group-table">
+            <thead>
+              <tr>
+                <th class="col-pos">#</th>
+                <th class="col-team">Đội</th>
+                <th class="col-stat">Đ</th>
+                <th class="col-stat">T</th>
+                <th class="col-stat">H</th>
+                <th class="col-stat">B</th>
+                <th class="col-stat">BT</th>
+                <th class="col-stat">BB</th>
+                <th class="col-stat">HS</th>
+                <th class="col-pts">Điểm</th>
+                <th class="col-prob">Vượt QVB</th>
+              </tr>
+            </thead>
+            <tbody id="group-F-body"></tbody>
+          </table>
+        </div>
+        <!-- Group G -->
+        <div id="group-G" class="group-card card glass-card">
+          <h3 class="group-title">Bảng G</h3>
+          <table class="group-table">
+            <thead>
+              <tr>
+                <th class="col-pos">#</th>
+                <th class="col-team">Đội</th>
+                <th class="col-stat">Đ</th>
+                <th class="col-stat">T</th>
+                <th class="col-stat">H</th>
+                <th class="col-stat">B</th>
+                <th class="col-stat">BT</th>
+                <th class="col-stat">BB</th>
+                <th class="col-stat">HS</th>
+                <th class="col-pts">Điểm</th>
+                <th class="col-prob">Vượt QVB</th>
+              </tr>
+            </thead>
+            <tbody id="group-G-body"></tbody>
+          </table>
+        </div>
+        <!-- Group H -->
+        <div id="group-H" class="group-card card glass-card">
+          <h3 class="group-title">Bảng H</h3>
+          <table class="group-table">
+            <thead>
+              <tr>
+                <th class="col-pos">#</th>
+                <th class="col-team">Đội</th>
+                <th class="col-stat">Đ</th>
+                <th class="col-stat">T</th>
+                <th class="col-stat">H</th>
+                <th class="col-stat">B</th>
+                <th class="col-stat">BT</th>
+                <th class="col-stat">BB</th>
+                <th class="col-stat">HS</th>
+                <th class="col-pts">Điểm</th>
+                <th class="col-prob">Vượt QVB</th>
+              </tr>
+            </thead>
+            <tbody id="group-H-body"></tbody>
+          </table>
+        </div>
+        <!-- Group I -->
+        <div id="group-I" class="group-card card glass-card">
+          <h3 class="group-title">Bảng I</h3>
+          <table class="group-table">
+            <thead>
+              <tr>
+                <th class="col-pos">#</th>
+                <th class="col-team">Đội</th>
+                <th class="col-stat">Đ</th>
+                <th class="col-stat">T</th>
+                <th class="col-stat">H</th>
+                <th class="col-stat">B</th>
+                <th class="col-stat">BT</th>
+                <th class="col-stat">BB</th>
+                <th class="col-stat">HS</th>
+                <th class="col-pts">Điểm</th>
+                <th class="col-prob">Vượt QVB</th>
+              </tr>
+            </thead>
+            <tbody id="group-I-body"></tbody>
+          </table>
+        </div>
+        <!-- Group J -->
+        <div id="group-J" class="group-card card glass-card">
+          <h3 class="group-title">Bảng J</h3>
+          <table class="group-table">
+            <thead>
+              <tr>
+                <th class="col-pos">#</th>
+                <th class="col-team">Đội</th>
+                <th class="col-stat">Đ</th>
+                <th class="col-stat">T</th>
+                <th class="col-stat">H</th>
+                <th class="col-stat">B</th>
+                <th class="col-stat">BT</th>
+                <th class="col-stat">BB</th>
+                <th class="col-stat">HS</th>
+                <th class="col-pts">Điểm</th>
+                <th class="col-prob">Vượt QVB</th>
+              </tr>
+            </thead>
+            <tbody id="group-J-body"></tbody>
+          </table>
+        </div>
+        <!-- Group K -->
+        <div id="group-K" class="group-card card glass-card">
+          <h3 class="group-title">Bảng K</h3>
+          <table class="group-table">
+            <thead>
+              <tr>
+                <th class="col-pos">#</th>
+                <th class="col-team">Đội</th>
+                <th class="col-stat">Đ</th>
+                <th class="col-stat">T</th>
+                <th class="col-stat">H</th>
+                <th class="col-stat">B</th>
+                <th class="col-stat">BT</th>
+                <th class="col-stat">BB</th>
+                <th class="col-stat">HS</th>
+                <th class="col-pts">Điểm</th>
+                <th class="col-prob">Vượt QVB</th>
+              </tr>
+            </thead>
+            <tbody id="group-K-body"></tbody>
+          </table>
+        </div>
+        <!-- Group L -->
+        <div id="group-L" class="group-card card glass-card">
+          <h3 class="group-title">Bảng L</h3>
+          <table class="group-table">
+            <thead>
+              <tr>
+                <th class="col-pos">#</th>
+                <th class="col-team">Đội</th>
+                <th class="col-stat">Đ</th>
+                <th class="col-stat">T</th>
+                <th class="col-stat">H</th>
+                <th class="col-stat">B</th>
+                <th class="col-stat">BT</th>
+                <th class="col-stat">BB</th>
+                <th class="col-stat">HS</th>
+                <th class="col-pts">Điểm</th>
+                <th class="col-prob">Vượt QVB</th>
+              </tr>
+            </thead>
+            <tbody id="group-L-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ────────────── TAB: ANALYTICS ────────────── -->
+    <section id="analytics" class="tab-content">
+      <div class="section-header">
+        <h1 class="section-title">
+          <span class="title-icon">📈</span>
+          Phân Tích Chuyên Sâu
+        </h1>
+        <p class="section-subtitle">Thống kê toàn diện, xác suất vô địch và bảng xếp hạng sức mạnh</p>
+      </div>
+
+      <!-- Winner Probabilities -->
+      <div id="winner-probs-section" class="card glass-card analytics-card">
+        <h3 class="card-title">🏆 Xác Suất Vô Địch</h3>
+        <div id="winner-probs-grid" class="winner-probs-grid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Team Strength Rankings -->
+      <div id="strength-rankings-section" class="card glass-card analytics-card">
+        <h3 class="card-title">💪 Bảng Xếp Hạng Sức Mạnh</h3>
+        <div class="table-responsive">
+          <table id="strength-table" class="strength-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Đội Tuyển</th>
+                <th>Sức Mạnh</th>
+                <th>Tấn Công</th>
+                <th>Phòng Ngự</th>
+                <th>Phong Độ</th>
+                <th>Kinh Nghiệm</th>
+                <th>Tổng Điểm</th>
+              </tr>
+            </thead>
+            <tbody id="strength-table-body">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tournament Bracket -->
+      <div id="bracket-section" class="card glass-card analytics-card">
+        <h3 class="card-title">🗓️ Sơ Đồ Giải Đấu</h3>
+        <div id="bracket-visualization" class="bracket-visualization">
+          <div id="bracket-r32" class="bracket-round">
+            <h4 class="bracket-round-title">Vòng 32</h4>
+            <div id="bracket-r32-matches" class="bracket-matches"></div>
+          </div>
+          <div id="bracket-r16" class="bracket-round">
+            <h4 class="bracket-round-title">Vòng 16</h4>
+            <div id="bracket-r16-matches" class="bracket-matches"></div>
+          </div>
+          <div id="bracket-qf" class="bracket-round">
+            <h4 class="bracket-round-title">Tứ Kết</h4>
+            <div id="bracket-qf-matches" class="bracket-matches"></div>
+          </div>
+          <div id="bracket-sf" class="bracket-round">
+            <h4 class="bracket-round-title">Bán Kết</h4>
+            <div id="bracket-sf-matches" class="bracket-matches"></div>
+          </div>
+          <div id="bracket-final" class="bracket-round">
+            <h4 class="bracket-round-title">Chung Kết</h4>
+            <div id="bracket-final-matches" class="bracket-matches"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Summary -->
+      <div id="stats-summary-section" class="card glass-card analytics-card">
+        <h3 class="card-title">📊 Tóm Tắt Thống Kê</h3>
+        <div id="stats-summary-grid" class="stats-summary-grid">
+          <div class="summary-stat">
+            <span class="summary-icon">⚽</span>
+            <span id="summary-avg-goals" class="summary-value">0.00</span>
+            <span class="summary-label">Trung bình bàn/trận</span>
+          </div>
+          <div class="summary-stat">
+            <span class="summary-icon">🎯</span>
+            <span id="summary-home-win-pct" class="summary-value">0%</span>
+            <span class="summary-label">Tỷ lệ thắng sân nhà</span>
+          </div>
+          <div class="summary-stat">
+            <span class="summary-icon">🤝</span>
+            <span id="summary-draw-pct" class="summary-value">0%</span>
+            <span class="summary-label">Tỷ lệ hòa</span>
+          </div>
+          <div class="summary-stat">
+            <span class="summary-icon">🔥</span>
+            <span id="summary-btts-pct" class="summary-value">0%</span>
+            <span class="summary-label">Cả hai ghi bàn</span>
+          </div>
+          <div class="summary-stat">
+            <span class="summary-icon">📈</span>
+            <span id="summary-over25-pct" class="summary-value">0%</span>
+            <span class="summary-label">Trên 2.5 bàn</span>
+          </div>
+          <div class="summary-stat">
+            <span class="summary-icon">🏟️</span>
+            <span id="summary-total-attendance" class="summary-value">0</span>
+            <span class="summary-label">Tổng khán giả</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ═══════════════════════════════════════════ FOOTER ═══════════════════════════════════════════ -->
+  <footer id="main-footer">
+    <div class="footer-inner">
+      <p class="footer-disclaimer">
+        ⚠️ <strong>Lưu ý:</strong> Tất cả dự đoán đều dựa trên mô hình thống kê và phân tích dữ liệu. 
+        Kết quả thực tế có thể khác biệt. Không sử dụng cho mục đích cá cược.
+      </p>
+      <div class="footer-credits">
+        <span>⚽ WC2026 Predictor</span>
+        <span class="footer-separator">|</span>
+        <span>Phiên bản 1.0</span>
+        <span class="footer-separator">|</span>
+        <span>Được xây dựng với ❤️ và AI</span>
+      </div>
+      <p class="footer-copyright">© 2026 WC2026 Predictor. Dữ liệu từ FIFA & các nguồn công khai.</p>
+    </div>
+  </footer>
+</div>
+
+<!-- ═══════════════════════════════════════════ LOADING OVERLAY ═══════════════════════════════════════════ -->
+<div id="loading-overlay" class="loading-overlay">
+  <div class="loading-content">
+    <div class="loading-spinner">
+      <div class="spinner-ball">⚽</div>
+    </div>
+    <h2 class="loading-title">Đang Tải Dữ Liệu</h2>
+    <p class="loading-subtitle">Khởi tạo hệ thống dự đoán AI...</p>
+    <div class="loading-progress">
+      <div id="loading-progress-bar" class="loading-progress-bar"></div>
+    </div>
+    <span id="loading-status-text" class="loading-status">Đang kết nối...</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ TOAST NOTIFICATIONS ═══════════════════════════════════════════ -->
+<div id="toast-container" class="toast-container"></div>
+
+<!-- Scripts - load order matters -->
+<script src="js/data.js"></script>
+<script src="js/predictor.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
