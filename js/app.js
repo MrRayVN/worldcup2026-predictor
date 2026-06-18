@@ -969,6 +969,34 @@
         }
       } catch (e) { console.warn('[App] AI report error', e); }
 
+      // 🔴 LIVE DATA BADGE 🔴
+      try {
+         const liveBadgeContainer = document.getElementById('live-data-badge-container');
+         if (this.selectedMatch && window.liveMatchStats && window.liveMatchStats[this.selectedMatch.id]) {
+            const ls = window.liveMatchStats[this.selectedMatch.id];
+            
+            const badgeHtml = `<div style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #fca5a5; padding: 10px 15px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9rem; display: flex; align-items: center; gap: 10px;">
+                <span style="display:inline-block; width:10px; height:10px; background-color:#ef4444; border-radius:50%; animation: pulse-red 1.5s infinite;"></span>
+                <span><b>LIVE API DATA APPLIED:</b> Hệ thống đang phân tích theo thời gian thực (Kiểm soát bóng: ${ls.homePossession}% - ${ls.awayPossession}%, Sút trúng đích: ${ls.homeShotsOnTarget} - ${ls.awayShotsOnTarget})</span>
+            </div>`;
+            
+            if (!liveBadgeContainer) {
+               const badge = document.createElement('div');
+               badge.id = 'live-data-badge-container';
+               badge.innerHTML = badgeHtml;
+               const aiPanel = document.getElementById('ai-report-panel');
+               if (aiPanel && aiPanel.parentNode) {
+                   aiPanel.parentNode.insertBefore(badge, aiPanel);
+               }
+            } else {
+               liveBadgeContainer.innerHTML = badgeHtml;
+               liveBadgeContainer.style.display = 'block';
+            }
+         } else {
+            if (liveBadgeContainer) liveBadgeContainer.style.display = 'none';
+         }
+      } catch (e) { console.warn('Live Badge Error:', e); }
+
       // ── Update factors table header ──
       this.setTextContent('factors-th-home', homeName);
       this.setTextContent('factors-th-away', awayName);
