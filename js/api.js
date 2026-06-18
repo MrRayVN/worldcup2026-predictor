@@ -151,30 +151,54 @@
      * @returns {Promise<Object>} Response data
      */
     async httpGet(url, options = {}, timeout = 8000) {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
+      const doFetch = async (fetchUrl) => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        try {
+          const response = await fetch(fetchUrl, {
+            ...options,
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          return await response.json();
+        } catch (err) {
+          clearTimeout(timeoutId);
+          throw err;
+        }
+      };
 
+      const isFootballData = url.includes('api.football-data.org');
+
+      if (!isFootballData) {
+        return doFetch(url);
+      }
+
+      // Try direct first
       try {
-        const response = await fetch(url, {
-          ...options,
-          signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        console.log(`[DataService] Đang gọi API trực tiếp: ${url}`);
+        return await doFetch(url);
+      } catch (directError) {
+        console.warn(`[DataService] ⚠️ Gọi API trực tiếp thất bại (CORS/Mạng). Thử qua CORSProxy.io...`, directError.message);
+        
+        // Try Proxy 1: corsproxy.io
+        try {
+          const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
+          return await doFetch(proxyUrl);
+        } catch (proxy1Error) {
+          console.warn(`[DataService] ⚠️ CORSProxy.io thất bại. Thử qua AllOrigins...`, proxy1Error.message);
+          
+          // Try Proxy 2: api.allorigins.win/raw
+          try {
+            const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+            return await doFetch(proxyUrl);
+          } catch (proxy2Error) {
+            console.error(`[DataService] ❌ Tất cả các phương thức kết nối API đều thất bại.`);
+            throw new Error(`API Connection Failed: direct, corsproxy, and allorigins all failed.`);
+          }
         }
-
-        return await response.json();
-      } catch (error) {
-        clearTimeout(timeoutId);
-
-        if (error.name === 'AbortError') {
-          throw new Error(`Hết thời gian chờ kết nối (${timeout}ms)`);
-        }
-
-        throw error;
       }
     }
 
@@ -183,68 +207,161 @@
     // ═══════════════════════════════════════════════════════════════════════
 
     /**
+     * Merge live API matches into the local fixtures array
+     * @param {Array} localMatches - Array of local matches (mutated in-place)
+     * @param {Array} apiMatches - Raw API match array
+     */
+    mergeApiMatches(localMatches, apiMatches) {
+      const stageMap = {
+        'GROUP_STAGE': 'Group Stage',
+        'LAST_32': 'Round of 32',
+        'LAST_16': 'Round of 16',
+        'QUARTER_FINALS': 'Quarter Finals',
+        'SEMI_FINALS': 'Semi Finals',
+        'FINAL': 'Final'
+      };
+
+      // 1. Merge Group Stage Matches (by matching home/away team codes)
+      const apiGroupMatches = apiMatches.filter(m => m.stage === 'GROUP_STAGE');
+      apiGroupMatches.forEach(m => {
+        let homeCode = m.homeTeam.tla;
+        let awayCode = m.awayTeam.tla;
+        if (homeCode === 'URY') homeCode = 'URU';
+        if (awayCode === 'URY') awayCode = 'URU';
+
+        const localMatch = localMatches.find(l => 
+          l.stage === 'Group Stage' &&
+          ((l.homeTeam.code === homeCode && l.awayTeam.code === awayCode) ||
+           (l.homeTeam.code === awayCode && l.awayTeam.code === homeCode))
+        );
+
+        if (localMatch) {
+          const isSwapped = localMatch.homeTeam.code === awayCode;
+          localMatch.status = this.normalizeStatus(m.status);
+          
+          if (m.score && m.score.fullTime && m.score.fullTime.home !== null && m.score.fullTime.away !== null) {
+            localMatch.score.home = isSwapped ? m.score.fullTime.away : m.score.fullTime.home;
+            localMatch.score.away = isSwapped ? m.score.fullTime.home : m.score.fullTime.away;
+          }
+          if (m.utcDate) localMatch.utcDate = m.utcDate;
+          if (m.referees && m.referees.length > 0) {
+            localMatch.referee = m.referees[0].name;
+          }
+        }
+      });
+
+      // 2. Merge Knockout Stage Matches (by matching stage and date-based ordering)
+      const knockoutStages = ['LAST_32', 'LAST_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINAL'];
+      knockoutStages.forEach(stage => {
+        const apiStageMatches = apiMatches
+          .filter(m => m.stage === stage)
+          .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
+        
+        const localRoundName = stageMap[stage];
+        const localStageMatches = localMatches
+          .filter(l => l.stage === localRoundName)
+          .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
+
+        for (let i = 0; i < Math.min(apiStageMatches.length, localStageMatches.length); i++) {
+          const am = apiStageMatches[i];
+          const lm = localStageMatches[i];
+
+          let homeCode = am.homeTeam.tla;
+          let awayCode = am.awayTeam.tla;
+          if (homeCode === 'URY') homeCode = 'URU';
+          if (awayCode === 'URY') awayCode = 'URU';
+
+          if (homeCode && awayCode) {
+            // Update codes and details
+            lm.homeTeam.code = homeCode;
+            lm.homeTeam.name = window.WC2026_DATA.teams[homeCode] ? (window.WC2026_DATA.teams[homeCode].nameVi || window.WC2026_DATA.teams[homeCode].name) : am.homeTeam.name;
+            lm.homeTeam.flag = this.getTeamFlag(homeCode);
+
+            lm.awayTeam.code = awayCode;
+            lm.awayTeam.name = window.WC2026_DATA.teams[awayCode] ? (window.WC2026_DATA.teams[awayCode].nameVi || window.WC2026_DATA.teams[awayCode].name) : am.awayTeam.name;
+            lm.awayTeam.flag = this.getTeamFlag(awayCode);
+
+            lm.status = this.normalizeStatus(am.status);
+            if (am.score && am.score.fullTime && am.score.fullTime.home !== null && am.score.fullTime.away !== null) {
+              lm.score.home = am.score.fullTime.home;
+              lm.score.away = am.score.fullTime.away;
+            }
+            if (am.utcDate) lm.utcDate = am.utcDate;
+            if (am.referees && am.referees.length > 0) {
+              lm.referee = am.referees[0].name;
+            }
+          }
+        }
+      });
+    }
+
+    /**
      * Fetch all matches - tries API first, falls back to embedded data
      * @param {Object} filters - Optional filters { status, matchday, dateFrom, dateTo }
      * @returns {Promise<Array>} Array of match/fixture objects
      */
     async fetchMatches(filters = {}) {
-      // Cache key bao gồm cả ngày (UTC) để mỗi ngày là cache mới — tránh cache cũ giữ status 'scheduled'
-      // cho các trận đã qua giờ.
       const todayKey = new Date().toISOString().slice(0, 10);
-      const cacheKey = 'matches_' + todayKey + '_' + JSON.stringify(filters);
-      const cached = this.getCached(cacheKey);
-      if (cached) {
-        console.log('[DataService] Trả về dữ liệu trận đấu từ bộ nhớ đệm');
-        return cached;
-      }
+      const cacheKey = 'matches_all_' + todayKey;
+      let matches = this.getCached(cacheKey);
 
-      let matches = null;
-
-      // Attempt 1: Try football-data.org API (chỉ khi có API key và chưa bị đánh dấu lỗi)
-      if (this.apiAvailable.footballData !== false && this.API_CONFIG.footballData.headers['X-Auth-Token']) {
-        try {
-          console.log('[DataService] 🌐 Đang tải dữ liệu từ football-data.org...');
-          const params = new URLSearchParams();
-          if (filters.status) params.append('status', filters.status);
-          if (filters.matchday) params.append('matchday', filters.matchday);
-          if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
-          if (filters.dateTo) params.append('dateTo', filters.dateTo);
-
-          const queryStr = params.toString() ? '?' + params.toString() : '';
-          const url = `${this.API_CONFIG.footballData.baseUrl}/competitions/${this.API_CONFIG.footballData.competitionId}/matches${queryStr}`;
-
-          const data = await this.httpGet(url, {
-            headers: this.API_CONFIG.footballData.headers
-          });
-
-          if (data && data.matches && data.matches.length > 0) {
-            matches = this.normalizeApiMatches(data.matches);
-            this.apiAvailable.footballData = true;
-            console.log(`[DataService] ✅ Đã tải ${matches.length} trận từ API`);
-          }
-        } catch (error) {
-          // Chỉ đánh dấu false khi lỗi mạng thực sự, không phải khi key trống
-          this.apiAvailable.footballData = false;
-          console.warn('[DataService] ❌ API không khả dụng, chuyển sang dữ liệu nhúng:', error.message);
-        }
-      } else if (!this.API_CONFIG.footballData.headers['X-Auth-Token']) {
-        console.log('[DataService] 📦 Bỏ qua API (không có key) — dùng dữ liệu nhúng');
-      }
-
-      // Fallback: Use embedded data from WC2026_DATA
       if (!matches) {
-        matches = this.getEmbeddedMatches(filters);
-        console.log(`[DataService] Sử dụng dữ liệu nhúng: ${matches.length} trận đấu`);
-      } else {
-        // API data — cũng áp dụng auto-close để đồng bộ
+        matches = this.getEmbeddedMatches({}); // Complete local list (unfiltered)
+
+        // API Fetch
+        if (this.apiAvailable.footballData !== false && this.API_CONFIG.footballData.headers['X-Auth-Token']) {
+          try {
+            console.log('[DataService] 🌐 Đang tải dữ liệu từ football-data.org...');
+            const url = `${this.API_CONFIG.footballData.baseUrl}/competitions/${this.API_CONFIG.footballData.competitionId}/matches`;
+            const data = await this.httpGet(url, {
+              headers: this.API_CONFIG.footballData.headers
+            });
+
+            if (data && data.matches && data.matches.length > 0) {
+              this.mergeApiMatches(matches, data.matches);
+              this.apiAvailable.footballData = true;
+              console.log(`[DataService] ✅ Đã tích hợp thành công dữ liệu trực tiếp từ API`);
+            }
+          } catch (error) {
+            this.apiAvailable.footballData = false;
+            console.warn('[DataService] ❌ Lỗi API, sử dụng dữ liệu nhúng:', error.message);
+          }
+        }
+
+        // Auto-close past matches
         matches = this.autoClosePastMatches(matches);
+
+        // Cache the complete merged list
+        const ttl = this.CACHE_TTL.matches;
+        this.setCache(cacheKey, matches, ttl);
+      } else {
+        console.log('[DataService] Trả về dữ liệu trận đấu (merged) từ bộ nhớ đệm');
       }
 
-      // Cache the result
-      const ttl = this.CACHE_TTL.matches;
-      this.setCache(cacheKey, matches, ttl);
+      // Return clones to prevent external mutations affecting cache
+      let filteredMatches = matches.map(m => ({
+        ...m,
+        homeTeam: { ...m.homeTeam },
+        awayTeam: { ...m.awayTeam },
+        score: { ...m.score }
+      }));
 
-      return matches;
+      if (filters.status) {
+        filteredMatches = filteredMatches.filter(m => m.status === filters.status);
+      }
+      if (filters.matchday) {
+        filteredMatches = filteredMatches.filter(m => m.matchday === parseInt(filters.matchday));
+      }
+      if (filters.dateFrom) {
+        const from = new Date(filters.dateFrom);
+        filteredMatches = filteredMatches.filter(m => new Date(m.utcDate) >= from);
+      }
+      if (filters.dateTo) {
+        const to = new Date(filters.dateTo);
+        filteredMatches = filteredMatches.filter(m => new Date(m.utcDate) <= to);
+      }
+
+      return filteredMatches;
     }
 
     /**
@@ -510,22 +627,26 @@
       apiStandings.forEach(group => {
         if (group.type === 'TOTAL' && group.group) {
           const groupCode = group.group.replace('GROUP_', '');
-          result[groupCode] = group.table.map((entry, idx) => ({
-            position: idx + 1,
-            team: {
-              code: entry.team.tla,
-              name: entry.team.name,
-              flag: this.getTeamFlag(entry.team.tla)
-            },
-            played: entry.playedGames,
-            won: entry.won,
-            draw: entry.draw,
-            lost: entry.lost,
-            goalsFor: entry.goalsFor,
-            goalsAgainst: entry.goalsAgainst,
-            goalDifference: entry.goalDifference,
-            points: entry.points
-          }));
+          result[groupCode] = group.table.map((entry, idx) => {
+            let teamCode = entry.team.tla;
+            if (teamCode === 'URY') teamCode = 'URU';
+            return {
+              position: idx + 1,
+              team: {
+                code: teamCode,
+                name: entry.team.name,
+                flag: this.getTeamFlag(teamCode)
+              },
+              played: entry.playedGames,
+              won: entry.won,
+              draw: entry.draw,
+              lost: entry.lost,
+              goalsFor: entry.goalsFor,
+              goalsAgainst: entry.goalsAgainst,
+              goalDifference: entry.goalDifference,
+              points: entry.points
+            };
+          });
         }
       });
 

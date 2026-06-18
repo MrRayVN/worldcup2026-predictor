@@ -2,26 +2,101 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>API Test</title>
+  <title>API Test Multi-Proxy</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #1a1a1a; color: #fff; }
+    pre { background: #2a2a2a; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 14px; }
+    .success { color: #4caf50; }
+    .error { color: #f44336; }
+    h3 { margin-top: 20px; }
+  </style>
 </head>
 <body>
-<h2>Football-Data.org API Test</h2>
-<pre id="output">Testing...</pre>
+<h2>Football-Data.org API Multi-Proxy Test</h2>
+<div id="status">Testing proxies...</div>
+
+<h3>1. Direct Fetch</h3>
+<pre id="direct-out">Testing...</pre>
+
+<h3>2. CORSProxy.io</h3>
+<pre id="corsproxy-out">Testing...</pre>
+
+<h3>3. AllOrigins (Raw)</h3>
+<pre id="allorigins-out">Testing...</pre>
+
+<h3>4. CodeTabs Proxy</h3>
+<pre id="codetabs-out">Testing...</pre>
+
 <script>
-(async function() {
-  const out = document.getElementById('output');
-  const key = 'ca35c74cbd8d4174af21cf360d47d1e9';
+const targetUrl = 'https://api.football-data.org/v4/competitions/WC/matches';
+const key = 'ca35c74cbd8d4174af21cf360d47d1e9';
+
+async function testDirect() {
+  const out = document.getElementById('direct-out');
   try {
-    out.textContent = 'Calling API...';
-    const resp = await fetch('https://api.football-data.org/v4/competitions/WC/matches', {
+    const resp = await fetch(targetUrl, {
       headers: { 'X-Auth-Token': key }
     });
     const data = await resp.json();
-    const finished = data.matches ? data.matches.filter(m => m.status === 'FINISHED') : [];
-    out.textContent = `Status: ${resp.status}\nTotal matches: ${data.matches ? data.matches.length : 0}\nFinished: ${finished.length}\n\nFirst finished:\n${finished.length > 0 ? JSON.stringify(finished[0], null, 2) : 'none'}`;
-  } catch(e) {
+    out.className = 'success';
+    out.textContent = `SUCCESS: Status ${resp.status}\nTotal matches: ${data.matches ? data.matches.length : 0}\nFinished: ${data.matches ? data.matches.filter(m => m.status === 'FINISHED').length : 0}`;
+  } catch (e) {
+    out.className = 'error';
     out.textContent = 'ERROR: ' + e.message;
   }
+}
+
+async function testCorsProxy() {
+  const out = document.getElementById('corsproxy-out');
+  try {
+    const resp = await fetch('https://corsproxy.io/?' + encodeURIComponent(targetUrl), {
+      headers: { 'X-Auth-Token': key }
+    });
+    const data = await resp.json();
+    out.className = 'success';
+    out.textContent = `SUCCESS: Status ${resp.status}\nTotal matches: ${data.matches ? data.matches.length : 0}\nFinished: ${data.matches ? data.matches.filter(m => m.status === 'FINISHED').length : 0}`;
+  } catch (e) {
+    out.className = 'error';
+    out.textContent = 'ERROR: ' + e.message;
+  }
+}
+
+async function testAllOrigins() {
+  const out = document.getElementById('allorigins-out');
+  try {
+    const resp = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl), {
+      headers: { 'X-Auth-Token': key }
+    });
+    const data = await resp.json();
+    out.className = 'success';
+    out.textContent = `SUCCESS: Status ${resp.status}\nTotal matches: ${data.matches ? data.matches.length : 0}\nFinished: ${data.matches ? data.matches.filter(m => m.status === 'FINISHED').length : 0}`;
+  } catch (e) {
+    out.className = 'error';
+    out.textContent = 'ERROR: ' + e.message;
+  }
+}
+
+async function testCodeTabs() {
+  const out = document.getElementById('codetabs-out');
+  try {
+    const resp = await fetch('https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(targetUrl), {
+      headers: { 'X-Auth-Token': key }
+    });
+    const data = await resp.json();
+    out.className = 'success';
+    out.textContent = `SUCCESS: Status ${resp.status}\nTotal matches: ${data.matches ? data.matches.length : 0}\nFinished: ${data.matches ? data.matches.filter(m => m.status === 'FINISHED').length : 0}`;
+  } catch (e) {
+    out.className = 'error';
+    out.textContent = 'ERROR: ' + e.message;
+  }
+}
+
+(async function() {
+  await testDirect();
+  await testCorsProxy();
+  await testAllOrigins();
+  await testCodeTabs();
+  document.getElementById('status').textContent = 'All tests completed!';
 })();
 </script>
 </body>
