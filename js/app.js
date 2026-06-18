@@ -135,7 +135,7 @@
         }, 500);
 
         // Start auto-refresh
-        try { this.startAutoRefresh(); } catch (e) { console.error('[App] startAutoRefresh error:', e); }
+        try { this.startAutoRefresh(); this.startLiveTicker(); } catch (e) { console.error('[App] start error:', e); }
 
         // Log data source status
         if (this.dataService) {
@@ -1496,6 +1496,25 @@
     // COUNTDOWN TIMER
     // ═══════════════════════════════════════════════════════════════════════
 
+
+    startLiveTicker() {
+      const tickerText = document.getElementById('last-updated-text');
+      if (!tickerText) return;
+      
+      setInterval(() => {
+        if (!this.lastUpdateTime) {
+           tickerText.innerText = 'Chưa đồng bộ';
+           return;
+        }
+        const diffSeconds = Math.floor((Date.now() - this.lastUpdateTime) / 1000);
+        if (diffSeconds < 60) {
+           tickerText.innerText = 'Cập nhật: ' + diffSeconds + ' giây trước';
+        } else {
+           tickerText.innerText = 'Cập nhật: ' + Math.floor(diffSeconds / 60) + ' phút trước';
+        }
+      }, 1000);
+    }
+
     startCountdown() {
       this.updateCountdown();
       this.countdownInterval = setInterval(() => this.updateCountdown(), 1000);
@@ -1609,7 +1628,7 @@
       if (!dateStr) return 'Chưa xác định';
       try {
         const date = new Date(dateStr);
-        return date.toLocaleDateString('vi-VN', {
+        return date.toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh',
           weekday: 'short',
           day: '2-digit',
           month: '2-digit',
@@ -1624,7 +1643,7 @@
       if (!dateStr) return '';
       try {
         const date = new Date(dateStr);
-        return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+        return date.toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', day: '2-digit', month: '2-digit' });
       } catch {
         return '';
       }
@@ -1634,7 +1653,7 @@
       if (!dateStr) return '';
       try {
         const date = new Date(dateStr);
-        return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+        return date.toLocaleTimeString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit' });
       } catch {
         return '';
       }
