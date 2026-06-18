@@ -79,6 +79,7 @@
           this.updateLoadingStatus('Đang tải bảng xếp hạng...');
           if (this.dataService) {
             this.standingsData = await this.dataService.fetchStandings();
+        this.engine.trainFromHistory(this.matchesData);
           }
         } catch (e) {
           console.error('[App] fetchStandings error:', e);
@@ -307,10 +308,46 @@
           const liveMatches = data.response || [];
           this.showToast(`✅ Cập nhật thành công. Có ${liveMatches.length} trận đang đá.`, 'success', 3000);
           
+          
           // Tích hợp dữ liệu live này vào local memory
           if (liveMatches.length > 0) {
              this.dataService.mergeApiMatches(this.dataService.getCached('matches_all_' + new Date().toISOString().slice(0, 10)) || window.WC2026_DATA.fixtures, liveMatches);
+             
+             // Fetch statistics for IN_PLAY matches
+             const inPlayMatches = liveMatches.filter(m => ['1H', '2H', 'HT', 'ET', 'P', 'LIVE'].includes(m.fixture.status.short));
+             for (let m of inPlayMatches) {
+                 try {
+                     const statRes = await fetch(`https://v3.football.api-sports.io/fixtures/statistics?fixture=${m.fixture.id}`, { headers: { 'x-apisports-key': token } });
+                     if (statRes.ok) {
+                         const statData = await statRes.json();
+                         if (statData.response && statData.response.length >= 2) {
+                             if (!window.liveMatchStats) window.liveMatchStats = {};
+                             
+                             const homeStats = statData.response[0].statistics;
+                             const awayStats = statData.response[1].statistics;
+                             
+                             const getStat = (stats, type) => {
+                                 const s = stats.find(x => x.type === type);
+                                 if (!s || s.value === null) return 0;
+                                 if (typeof s.value === 'string' && s.value.includes('%')) return parseInt(s.value.replace('%',''));
+                                 return parseInt(s.value);
+                             };
+
+                             window.liveMatchStats[m.fixture.id] = {
+                                 isActive: true,
+                                 homePossession: getStat(homeStats, 'Ball Possession'),
+                                 awayPossession: getStat(awayStats, 'Ball Possession'),
+                                 homeShotsOnTarget: getStat(homeStats, 'Shots on Goal'),
+                                 awayShotsOnTarget: getStat(awayStats, 'Shots on Goal'),
+                                 homeRedCards: getStat(homeStats, 'Red Cards'),
+                                 awayRedCards: getStat(awayStats, 'Red Cards')
+                             };
+                         }
+                     }
+                 } catch(e) { console.error('Live stat error', e); }
+             }
           }
+
           
           // Làm mới UI
           this.manualRefresh();
@@ -706,7 +743,8 @@
             stadium: match.stadium || match.venue,
             referee: match.referee
           };
-          const raw = this.engine.predictMatch(homeCode, awayCode, ctx);
+          const liveStats = window.liveMatchStats ? window.liveMatchStats[match.id] : null;
+          const raw = this.engine.predictMatch(homeCode, awayCode, ctx, liveStats);
           // Normalize engine output to app format
           prediction = this.normalizeEnginePrediction(raw);
         } catch (err) {

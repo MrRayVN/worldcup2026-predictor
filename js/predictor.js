@@ -471,7 +471,7 @@
   /* ════════════════════════════════════════════════════════════════
    *  Core: predictMatch
    * ════════════════════════════════════════════════════════════════ */
-  PredictionEngine.prototype.predictMatch = function (homeCode, awayCode, context) {
+  PredictionEngine.prototype.predictMatch = function (homeCode, awayCode, context, liveStats) {
     context = context || {};
     var home = this._getTeam(homeCode);
     var away = this._getTeam(awayCode);
@@ -540,6 +540,31 @@
 
     // The 20-factor composite in roughly [-0.3, 0.3]
     var compositeDelta = hWS - aWS;
+
+    // LIVE MOMENTUM INJECTION
+    if (liveStats && liveStats.isActive) {
+        var homePoss = liveStats.homePossession || 50;
+        var awayPoss = liveStats.awayPossession || 50;
+        var homeShots = liveStats.homeShotsOnTarget || 0;
+        var awayShots = liveStats.awayShotsOnTarget || 0;
+        var homeCards = liveStats.homeRedCards || 0;
+        var awayCards = liveStats.awayRedCards || 0;
+
+        // Modify lambda based on live stats
+        // Possession advantage
+        var possDelta = (homePoss - awayPoss) / 100; 
+        homeFactorMul += possDelta * 0.2;
+        awayFactorMul -= possDelta * 0.2;
+
+        // Shots advantage
+        homeFactorMul += homeShots * 0.05;
+        awayFactorMul += awayShots * 0.05;
+
+        // Red card penalty
+        homeFactorMul -= homeCards * 0.4;
+        awayFactorMul -= awayCards * 0.4;
+    }
+
     // 0.15 → ~16% lambda boost (mirrors real bookmaker market moves)
     var homeFactorMul = 1 + compositeDelta * 0.55;
     var awayFactorMul = 1 - compositeDelta * 0.55;
@@ -1047,6 +1072,42 @@
   /* ════════════════════════════════════════════════════════════════
    *  Calibration: log predictions vs outcomes (Brier)
    * ════════════════════════════════════════════════════════════════ */
+  
+  PredictionEngine.prototype.trainFromHistory = function(fixtures) {
+    if (!Array.isArray(fixtures)) return;
+    // Sort chronologically
+    var sorted = fixtures.slice().sort(function(a,b){ return new Date(a.utcDate) - new Date(b.utcDate); });
+    
+    // Reset forms and dynamic stats
+    var codes = Object.keys(this.teams);
+    for (var i=0; i<codes.length; i++) {
+        this.teams[codes[i]].form = []; // Clear hardcoded form
+    }
+
+    for (var i=0; i<sorted.length; i++) {
+       var f = sorted[i];
+       if (f.status === 'finished' && f.score && f.score.home !== null && f.score.away !== null) {
+           var hCode = typeof f.homeTeam === 'object' ? f.homeTeam.code : f.homeTeam;
+           var aCode = typeof f.awayTeam === 'object' ? f.awayTeam.code : f.awayTeam;
+           var home = this._getTeam(hCode);
+           var away = this._getTeam(aCode);
+           if (!home || !away) continue;
+
+           // Update ELO
+           this.updateElo(hCode, aCode, f.score.home, f.score.away, f.stage);
+           
+           // Update Form
+           var hRes = f.score.home > f.score.away ? 'W' : (f.score.home < f.score.away ? 'L' : 'D');
+           var aRes = f.score.home < f.score.away ? 'W' : (f.score.home > f.score.away ? 'L' : 'D');
+           
+           home.form.push(hRes);
+           away.form.push(aRes);
+           if (home.form.length > 5) home.form.shift();
+           if (away.form.length > 5) away.form.shift();
+       }
+    }
+  };
+
   PredictionEngine.prototype.calibrateFromHistory = function (fixtures) {
     if (!Array.isArray(fixtures)) return { brier: null, n: 0 };
     var self = this;
