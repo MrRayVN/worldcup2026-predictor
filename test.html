@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>API Test</title>
+</head>
+<body>
+<h2>Football-Data.org API Test</h2>
+<pre id="output">Testing...</pre>
+<script>
+(async function() {
+  const out = document.getElementById('output');
+  const key = 'ca35c74cbd8d4174af21cf360d47d1e9';
+  try {
+    out.textContent = 'Calling API...';
+    const resp = await fetch('https://api.football-data.org/v4/competitions/WC/matches', {
+      headers: { 'X-Auth-Token': key }
+    });
+    const data = await resp.json();
+    const finished = data.matches ? data.matches.filter(m => m.status === 'FINISHED') : [];
+    out.textContent = `Status: ${resp.status}\nTotal matches: ${data.matches ? data.matches.length : 0}\nFinished: ${finished.length}\n\nFirst finished:\n${finished.length > 0 ? JSON.stringify(finished[0], null, 2) : 'none'}`;
+  } catch(e) {
+    out.textContent = 'ERROR: ' + e.message;
+  }
+})();
+</script>
+</body>
+</html>

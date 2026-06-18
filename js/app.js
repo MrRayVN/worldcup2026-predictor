@@ -95,6 +95,29 @@
           console.error('[App] getTournamentStats error:', e);
           this.tournamentStats = {};
         }
+
+        // DEBUG + Fallback: compute stats from matchesData if service failed
+        console.log('[App] matchesData count:', this.matchesData.length,
+          '| finished:', this.matchesData.filter(m => m.status === 'finished').length,
+          '| tournamentStats:', JSON.stringify(this.tournamentStats));
+
+        if (!this.tournamentStats || !this.tournamentStats.matchesPlayed) {
+          console.log('[App] Computing tournamentStats from matchesData fallback...');
+          const finished = this.matchesData.filter(m => m.status === 'finished');
+          const totalGoals = finished.reduce((sum, m) => {
+            const h = (m.score && m.score.home) || 0;
+            const a = (m.score && m.score.away) || 0;
+            return sum + h + a;
+          }, 0);
+          this.tournamentStats = {
+            totalMatches: this.matchesData.length || 104,
+            matchesPlayed: finished.length,
+            totalGoals: totalGoals,
+            avgGoals: finished.length > 0 ? (totalGoals / finished.length).toFixed(2) : '0.00',
+            homeWinPct: 0, drawPct: 0, awayWinPct: 0, bttsPct: 0, over25Pct: 0, liveMatches: 0
+          };
+        }
+
         this.updateLoadingProgress(85);
 
         // Setup UI
