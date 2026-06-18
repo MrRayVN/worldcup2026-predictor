@@ -20,13 +20,17 @@
         predictions: 15 * 60 * 1000     // 15 minutes for predictions
       };
 
+      // Allow API key from URL parameter: ?apikey=YOUR_KEY
+      const urlParams = new URLSearchParams(window.location.search);
+      const userApiKey = urlParams.get('apikey') || urlParams.get('api_key') || '';
+
       // API endpoints (free tier, will fallback if unavailable)
       this.API_CONFIG = {
         footballData: {
           baseUrl: 'https://api.football-data.org/v4',
           competitionId: 'WC',  // World Cup
           headers: {
-            'X-Auth-Token': '' // No key - will trigger fallback
+            'X-Auth-Token': userApiKey
           }
         },
         openWeather: {
@@ -36,10 +40,18 @@
       };
 
       // Track API availability
+      // null = chưa thử, true = đang hoạt động, false = lỗi mạng thực sự
       this.apiAvailable = {
-        footballData: null, // null = unknown, true/false after first attempt
+        footballData: null,
         openWeather: null
       };
+
+      // Log nguồn dữ liệu khi khởi tạo
+      if (userApiKey) {
+        console.log('[DataService] 🔑 API key được cung cấp qua URL — sẽ thử kết nối football-data.org');
+      } else {
+        console.log('[DataService] ⚠️ Không có API key — sử dụng dữ liệu nhúng. Thêm ?apikey=YOUR_KEY vào URL để dùng dữ liệu trực tiếp.');
+      }
 
       // Request queue for rate limiting
       this.requestQueue = [];
@@ -188,10 +200,10 @@
 
       let matches = null;
 
-      // Attempt 1: Try football-data.org API
-      if (this.apiAvailable.footballData !== false) {
+      // Attempt 1: Try football-data.org API (chỉ khi có API key và chưa bị đánh dấu lỗi)
+      if (this.apiAvailable.footballData !== false && this.API_CONFIG.footballData.headers['X-Auth-Token']) {
         try {
-          console.log('[DataService] Đang tải dữ liệu từ football-data.org...');
+          console.log('[DataService] 🌐 Đang tải dữ liệu từ football-data.org...');
           const params = new URLSearchParams();
           if (filters.status) params.append('status', filters.status);
           if (filters.matchday) params.append('matchday', filters.matchday);
@@ -208,12 +220,15 @@
           if (data && data.matches && data.matches.length > 0) {
             matches = this.normalizeApiMatches(data.matches);
             this.apiAvailable.footballData = true;
-            console.log(`[DataService] Đã tải ${matches.length} trận từ API`);
+            console.log(`[DataService] ✅ Đã tải ${matches.length} trận từ API`);
           }
         } catch (error) {
+          // Chỉ đánh dấu false khi lỗi mạng thực sự, không phải khi key trống
           this.apiAvailable.footballData = false;
-          console.log('[DataService] API không khả dụng, chuyển sang dữ liệu nhúng:', error.message);
+          console.warn('[DataService] ❌ API không khả dụng, chuyển sang dữ liệu nhúng:', error.message);
         }
+      } else if (!this.API_CONFIG.footballData.headers['X-Auth-Token']) {
+        console.log('[DataService] 📦 Bỏ qua API (không có key) — dùng dữ liệu nhúng');
       }
 
       // Fallback: Use embedded data from WC2026_DATA
@@ -960,6 +975,35 @@
           this.apiAvailable.openWeather === false ? 'Không khả dụng' : 'Chưa kiểm tra',
         embeddedData: (window.WC2026_DATA) ? 'Sẵn sàng' : 'Không có'
       };
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // DATA SOURCE LOGGING
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * In ra console nguồn dữ liệu đang được sử dụng
+     * Gọi sau khi đã fetch dữ liệu lần đầu để có kết quả chính xác
+     */
+    logDataSource() {
+      const status = this.getDataSourceStatus();
+      const hasApiKey = !!this.API_CONFIG.footballData.headers['X-Auth-Token'];
+
+      console.group('[DataService] 📊 Trạng thái nguồn dữ liệu');
+      console.log(`  ⚽ Football-Data.org: ${status.footballData}${hasApiKey ? ' (có API key)' : ' (không có key)'}`);
+      console.log(`  🌤️ OpenWeather:       ${status.openWeather}`);
+      console.log(`  💾 Dữ liệu nhúng:     ${status.embeddedData}`);
+
+      if (this.apiAvailable.footballData === true) {
+        console.log('  → Đang sử dụng: DỮ LIỆU TRỰC TIẾP từ football-data.org');
+      } else if (hasApiKey && this.apiAvailable.footballData === false) {
+        console.log('  → Đang sử dụng: DỮ LIỆU NHÚNG (API key không hợp lệ hoặc lỗi mạng)');
+      } else {
+        console.log('  → Đang sử dụng: DỮ LIỆU NHÚNG (không có API key)');
+      }
+      console.groupEnd();
+
+      return status;
     }
   }
 

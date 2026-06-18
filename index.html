@@ -67,6 +67,9 @@
         <span id="countdown-match-info" class="countdown-match-info"></span>
       </div>
 
+      <button id="refresh-btn" class="refresh-btn" aria-label="Làm mới" title="Làm mới dữ liệu">↻</button>
+      <button id="theme-toggle" class="theme-toggle" aria-label="Đổi giao diện" title="Đổi sáng/tối">🌙</button>
+
       <button id="mobile-menu-toggle" class="mobile-menu-toggle" aria-label="Menu">
         <span></span><span></span><span></span>
       </button>
@@ -222,6 +225,29 @@
             <span>Độ tin cậy: </span>
             <span id="confidence-value" class="confidence-value">0%</span>
           </div>
+
+          <!-- Modern 1X2 row -->
+          <div class="probability-modern">
+            <div class="probability-modern-side home">
+              <span id="home-prob-pct" class="probability-modern-pct">0%</span>
+              <span id="home-prob-name" class="probability-modern-name">Đội nhà</span>
+            </div>
+            <div class="probability-modern-bar">
+              <div id="home-prob-fill" class="probability-modern-fill home" style="width:33%"></div>
+              <div id="away-prob-fill" class="probability-modern-fill away" style="width:33%"></div>
+              <span id="draw-prob-pill" class="probability-modern-draw">Hòa 34%</span>
+            </div>
+            <div class="probability-modern-side away">
+              <span id="away-prob-pct" class="probability-modern-pct">0%</span>
+              <span id="away-prob-name" class="probability-modern-name">Đội khách</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Pitch Report panel -->
+        <div id="ai-report-panel" class="ai-report-panel" style="display:none;">
+          <span class="ai-badge"><span class="ai-badge-dot"></span>AI NHẬN ĐỊNH</span>
+          <p id="ai-report-text" class="ai-report-text"></p>
         </div>
 
         <!-- Charts Row 1 -->
@@ -238,6 +264,115 @@
             <h3 class="card-title">Mức Độ Tin Cậy</h3>
             <canvas id="confidence-gauge" width="300" height="300"></canvas>
             <div id="gauge-value-display" class="gauge-value"></div>
+          </div>
+
+          <!-- Probability Donut -->
+          <div id="prob-donut-container" class="chart-container card glass-card">
+            <h3 class="card-title">Tỷ Lệ 1X2</h3>
+            <canvas id="prob-donut-chart" width="300" height="300"></canvas>
+          </div>
+        </div>
+
+        <!-- Charts Row 1.5 -->
+        <div class="charts-row">
+          <!-- Win Margin distribution -->
+          <div id="win-margin-container" class="chart-container card glass-card">
+            <h3 class="card-title">Phân Phối Cách Biệt Bàn Thắng</h3>
+            <canvas id="win-margin-chart" width="600" height="280"></canvas>
+          </div>
+        </div>
+
+        <!-- Charts Row 1.7 -->
+        <div class="charts-row">
+          <!-- xG Comparison -->
+          <div id="xg-chart-container" class="chart-container card glass-card">
+            <h3 class="card-title">Bàn Thắng Kỳ Vọng (xG)</h3>
+            <canvas id="xg-chart" width="400" height="300"></canvas>
+          </div>
+
+          <!-- Clean Sheet Donut -->
+          <div id="cs-donut-container" class="chart-container card glass-card">
+            <h3 class="card-title">Giữ Sạch Lưới & BTTS</h3>
+            <canvas id="cs-donut-chart" width="400" height="320"></canvas>
+          </div>
+        </div>
+
+        <!-- Form sparklines -->
+        <div id="form-sparklines" class="card glass-card">
+          <h3 class="card-title">Phong Độ Gần Đây (10 trận)</h3>
+          <div class="form-sparkline-row">
+            <span id="form-spark-home-label" class="form-spark-label">🏠 Đội nhà</span>
+            <div class="sparkline-wrapper"><canvas id="form-spark-home"></canvas></div>
+          </div>
+          <div class="form-sparkline-row">
+            <span id="form-spark-away-label" class="form-spark-label">✈️ Đội khách</span>
+            <div class="sparkline-wrapper"><canvas id="form-spark-away"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Markets grid (double chance / draw no bet / over-under) -->
+        <div class="card glass-card">
+          <h3 class="card-title">Thị Trường Cược</h3>
+          <div class="markets-grid">
+            <div class="market-card">
+              <div class="market-card-title">Cơ hội kép 1X</div>
+              <div class="market-card-value" id="mkt-dc-1x">0%</div>
+              <div class="market-card-sub">Đội nhà thắng hoặc hòa</div>
+            </div>
+            <div class="market-card">
+              <div class="market-card-title">Cơ hội kép X2</div>
+              <div class="market-card-value" id="mkt-dc-x2">0%</div>
+              <div class="market-card-sub">Đội khách thắng hoặc hòa</div>
+            </div>
+            <div class="market-card">
+              <div class="market-card-title">Cơ hội kép 12</div>
+              <div class="market-card-value" id="mkt-dc-12">0%</div>
+              <div class="market-card-sub">Có thắng (không hòa)</div>
+            </div>
+            <div class="market-card">
+              <div class="market-card-title">Draw No Bet (Nhà)</div>
+              <div class="market-card-value" id="mkt-dnb-h">0%</div>
+              <div class="market-card-sub">Thắng / (Thắng + Thua) — loại bỏ hòa</div>
+            </div>
+            <div class="market-card">
+              <div class="market-card-title">Draw No Bet (Khách)</div>
+              <div class="market-card-value" id="mkt-dnb-a">0%</div>
+              <div class="market-card-sub">Thắng / (Thắng + Thua) — loại bỏ hòa</div>
+            </div>
+            <div class="market-card">
+              <div class="market-card-title">Trên 0.5 bàn</div>
+              <div class="market-card-value" id="mkt-over05">0%</div>
+              <div class="market-card-sub">Trận đấu có bàn thắng</div>
+            </div>
+            <div class="market-card">
+              <div class="market-card-title">Trên 1.5 bàn</div>
+              <div class="market-card-value" id="mkt-over15">0%</div>
+              <div class="market-card-sub">Ít nhất 2 bàn</div>
+            </div>
+            <div class="market-card">
+              <div class="market-card-title">Trên 3.5 bàn</div>
+              <div class="market-card-value" id="mkt-over35">0%</div>
+              <div class="market-card-sub">Ít nhất 4 bàn</div>
+            </div>
+            <div class="market-card">
+              <div class="market-card-title">Trên 4.5 bàn</div>
+              <div class="market-card-value" id="mkt-over45">0%</div>
+              <div class="market-card-sub">Ít nhất 5 bàn (rất cao)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top scores list -->
+        <div class="card glass-card">
+          <h3 class="card-title">5 Tỉ Số Khả Thi Nhất</h3>
+          <div id="top-scores-list" class="top-scores-list"></div>
+        </div>
+
+        <!-- HT/FT 3x3 matrix -->
+        <div class="card glass-card">
+          <h3 class="card-title">Ma Trận Hiệp 1 / Cả Trận (HT/FT)</h3>
+          <div id="htft-container" class="htft-container">
+            <canvas id="htft-chart"></canvas>
           </div>
         </div>
 

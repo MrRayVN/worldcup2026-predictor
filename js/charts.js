@@ -729,6 +729,487 @@
     animate(750, drawFrame);
   };
 
+  /* ====================================================================
+   *  7. WIN MARGIN DISTRIBUTION (diverging bar)
+   * ==================================================================== */
+  ChartRenderer.drawWinMarginChart = function (canvasId, winMargin, homeTeam, awayTeam) {
+    var c = prepCanvas(canvasId);
+    var ctx = c.ctx, W = c.w, H = c.h;
+
+    if (!winMargin) return;
+    var labels = ['-4+', '-3', '-2', '-1', '0', '+1', '+2', '+3', '+4+'];
+    var keys   = ['-4',  '-3', '-2', '-1', '0', '1',  '2',  '3',  '4'];
+    var values = keys.map(function (k) { return winMargin[k] || 0; });
+
+    // Layout
+    var padTop = 18, padBot = 36, padX = 12;
+    var chartH = H - padTop - padBot;
+    var chartW = W - padX * 2;
+    var rowH = Math.min(chartH / values.length, 26);
+    var barH = rowH * 0.7;
+    var maxV = Math.max.apply(null, values) || 0.01;
+    var centerX = W / 2;
+
+    function drawFrame(progress) {
+      clearCanvas(ctx, W, H);
+      ctx.font = 'bold 11px system-ui, sans-serif';
+      ctx.textBaseline = 'top';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = COLORS.textDim;
+      ctx.fillText('← ' + (awayTeam || 'Away') + ' thắng', centerX - 70, 2);
+      ctx.fillStyle = COLORS.text;
+      ctx.fillText('Hòa', centerX, 2);
+      ctx.fillStyle = COLORS.textDim;
+      ctx.fillText((homeTeam || 'Home') + ' thắng →', centerX + 70, 2);
+
+      for (var i = 0; i < values.length; i++) {
+        var v = values[i] * progress;
+        var y = padTop + i * rowH;
+        var midY = y + rowH / 2;
+        var barLen = (v / maxV) * (chartW / 2 - 20);
+        var isHome = i > 4;
+        var color = isHome ? COLORS.homeWin : (i < 4 ? COLORS.awayWin : COLORS.draw);
+
+        // Background line
+        ctx.fillStyle = 'rgba(255,255,255,0.05)';
+        ctx.fillRect(centerX - chartW / 2, midY - barH / 2, chartW, barH);
+
+        // Bar
+        if (isHome) {
+          ctx.fillStyle = color;
+          ctx.fillRect(centerX, midY - barH / 2, barLen, barH);
+        } else if (i < 4) {
+          ctx.fillStyle = color;
+          ctx.fillRect(centerX - barLen, midY - barH / 2, barLen, barH);
+        } else {
+          ctx.fillStyle = color;
+          ctx.fillRect(centerX - barLen, midY - barH / 2, barLen * 2, barH);
+        }
+
+        // Label on left
+        ctx.font = '10px system-ui, sans-serif';
+        ctx.fillStyle = COLORS.text;
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(labels[i], centerX - chartW / 2 - 6, midY);
+
+        // Percent
+        if (v > 0.01) {
+          ctx.font = 'bold 10px system-ui, sans-serif';
+          ctx.fillStyle = '#FFFFFF';
+          ctx.textAlign = isHome ? 'left' : 'right';
+          if (isHome) {
+            ctx.fillText((v * 100).toFixed(1) + '%', centerX + barLen + 4, midY);
+          } else if (i < 4) {
+            ctx.fillText((v * 100).toFixed(1) + '%', centerX - barLen - 4, midY);
+          } else {
+            ctx.fillText((v * 100).toFixed(1) + '%', centerX + barLen + 4, midY);
+          }
+        }
+      }
+    }
+    animate(800, drawFrame);
+  };
+
+  /* ====================================================================
+   *  8. xG COMPARISON (side-by-side bars)
+   * ==================================================================== */
+  ChartRenderer.drawXGChart = function (canvasId, homeXG, awayXG, homeName, awayName) {
+    var c = prepCanvas(canvasId);
+    var ctx = c.ctx, W = c.w, H = c.h;
+
+    var padTop = 30, padBot = 30, padX = 30;
+    var chartH = H - padTop - padBot;
+    var chartW = W - padX * 2;
+    var maxV = Math.max(homeXG, awayXG, 3);
+
+    function drawFrame(progress) {
+      clearCanvas(ctx, W, H);
+
+      // Axis grid
+      ctx.strokeStyle = COLORS.gridLine;
+      ctx.lineWidth = 1;
+      for (var g = 0; g <= 3; g++) {
+        var gx = padX + (g / 3) * chartW;
+        ctx.beginPath();
+        ctx.moveTo(gx, padTop);
+        ctx.lineTo(gx, padTop + chartH);
+        ctx.stroke();
+        ctx.fillStyle = COLORS.textDim;
+        ctx.font = '9px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText((g / 3 * maxV).toFixed(1), gx, padTop + chartH + 6);
+      }
+
+      // Bars
+      var barW = chartW * 0.30;
+      var gap = chartW * 0.10;
+      var homeX = padX + (chartW - 2 * barW - gap) / 2;
+      var awayX = homeX + barW + gap;
+      var homeH = (homeXG / maxV) * chartH * progress;
+      var awayH = (awayXG / maxV) * chartH * progress;
+
+      // Home bar (gradient teal)
+      var hg = ctx.createLinearGradient(0, padTop + chartH - homeH, 0, padTop + chartH);
+      hg.addColorStop(0, '#00E5BB');
+      hg.addColorStop(1, '#008F75');
+      ctx.fillStyle = hg;
+      roundRect(ctx, homeX, padTop + chartH - homeH, barW, homeH, 6);
+      ctx.fill();
+
+      // Away bar (gradient coral)
+      var ag = ctx.createLinearGradient(0, padTop + chartH - awayH, 0, padTop + chartH);
+      ag.addColorStop(0, '#FF8585');
+      ag.addColorStop(1, '#D63A3A');
+      ctx.fillStyle = ag;
+      roundRect(ctx, awayX, padTop + chartH - awayH, barW, awayH, 6);
+      ctx.fill();
+
+      // Values on top
+      ctx.font = 'bold 22px system-ui, sans-serif';
+      ctx.textBaseline = 'bottom';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = COLORS.text;
+      ctx.fillText(homeXG.toFixed(2), homeX + barW / 2, padTop + chartH - homeH - 6);
+      ctx.fillText(awayXG.toFixed(2), awayX + barW / 2, padTop + chartH - awayH - 6);
+
+      // Labels under
+      ctx.font = '12px system-ui, sans-serif';
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = COLORS.textDim;
+      ctx.fillText(homeName || 'Home', homeX + barW / 2, padTop + chartH + 12);
+      ctx.fillText(awayName || 'Away', awayX + barW / 2, padTop + chartH + 12);
+    }
+    animate(700, drawFrame);
+  };
+
+  function roundRect(ctx, x, y, w, h, r) {
+    if (w < 1) w = 1; if (h < 1) h = 1;
+    if (typeof ctx.roundRect === 'function') { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); return; }
+    r = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  /* ====================================================================
+   *  9. CLEAN SHEET / BTTS DONUT
+   * ==================================================================== */
+  ChartRenderer.drawCleanSheetDonut = function (canvasId, homeCS, awayCS, btts, homeName, awayName) {
+    var c = prepCanvas(canvasId);
+    var ctx = c.ctx, W = c.w, H = c.h;
+
+    var cx = W / 2, cy = H * 0.55;
+    var outerR = Math.min(W * 0.42, H * 0.42);
+    var innerR = outerR * 0.62;
+    var midR = (outerR + innerR) / 2;
+
+    function drawFrame(progress) {
+      clearCanvas(ctx, W, H);
+
+      var a0 = -Math.PI / 2;
+      // Home clean sheet segment (left half)
+      var a1 = a0 + Math.PI * 2 * homeCS * progress;
+      // BTTS
+      var a2 = a1 + Math.PI * 2 * btts * progress;
+      // Away clean sheet
+      var a3 = a2 + Math.PI * 2 * awayCS * progress;
+      // neither (gap for visual separation)
+      var a4 = a0 + Math.PI * 2;
+
+      function seg(from, to, color) {
+        if (to - from < 0.001) return;
+        ctx.beginPath();
+        ctx.arc(cx, cy, outerR, from, to);
+        ctx.arc(cx, cy, innerR, to, from, true);
+        ctx.closePath();
+        ctx.fillStyle = color;
+        ctx.fill();
+      }
+      seg(a0, a1, '#00D4AA');           // home CS = teal
+      seg(a1, a2, '#4A9EFF');           // BTTS = blue
+      seg(a2, a3, '#FF6B6B');           // away CS = coral
+      // a3 → a4 is implicit "neither" but btts+cs already covers all; nothing to do
+
+      // Inner label
+      ctx.font = 'bold 14px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = COLORS.text;
+      ctx.fillText('BTTS', cx, cy - 10);
+      ctx.font = 'bold 20px system-ui, sans-serif';
+      ctx.fillText((btts * 100).toFixed(0) + '%', cx, cy + 12);
+
+      // Legend
+      var legendY = cy + outerR + 16;
+      ctx.font = '11px system-ui, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      var items = [
+        { c: '#00D4AA', l: (homeName || 'Home') + ' sạch lưới: ' + (homeCS * 100).toFixed(0) + '%' },
+        { c: '#4A9EFF', l: 'Cả 2 đội ghi bàn: ' + (btts * 100).toFixed(0) + '%' },
+        { c: '#FF6B6B', l: (awayName || 'Away') + ' sạch lưới: ' + (awayCS * 100).toFixed(0) + '%' }
+      ];
+      var lx = 8;
+      for (var i = 0; i < items.length; i++) {
+        ctx.fillStyle = items[i].c;
+        ctx.fillRect(lx, legendY - 5, 10, 10);
+        ctx.fillStyle = COLORS.text;
+        ctx.fillText(items[i].l, lx + 14, legendY);
+        lx += ctx.measureText(items[i].l).width + 28;
+        if (lx > W - 100) { lx = 8; legendY += 16; }
+      }
+    }
+    animate(800, drawFrame);
+  };
+
+  /* ====================================================================
+   *  10. PROBABILITY DONUT (1X2)
+   * ==================================================================== */
+  ChartRenderer.drawProbabilityDonut = function (canvasId, homeWin, draw, awayWin, homeName, awayName) {
+    var c = prepCanvas(canvasId);
+    var ctx = c.ctx, W = c.w, H = c.h;
+
+    var cx = W / 2, cy = H * 0.52;
+    var outerR = Math.min(W * 0.40, H * 0.40);
+    var innerR = outerR * 0.60;
+
+    function drawFrame(progress) {
+      clearCanvas(ctx, W, H);
+
+      var a0 = -Math.PI / 2;
+      var a1 = a0 + Math.PI * 2 * homeWin * progress;
+      var a2 = a1 + Math.PI * 2 * draw * progress;
+      var a3 = a2 + Math.PI * 2 * awayWin * progress;
+
+      function seg(from, to, color, label, val) {
+        if (to - from < 0.001) return;
+        ctx.beginPath();
+        ctx.arc(cx, cy, outerR, from, to);
+        ctx.arc(cx, cy, innerR, to, from, true);
+        ctx.closePath();
+        ctx.fillStyle = color;
+        ctx.fill();
+        // outer label
+        var midA = (from + to) / 2;
+        if (to - from > 0.3) {
+          var lx = cx + Math.cos(midA) * (outerR + 12);
+          var ly = cy + Math.sin(midA) * (outerR + 12);
+          ctx.font = 'bold 11px system-ui, sans-serif';
+          ctx.fillStyle = COLORS.text;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(val, lx, ly);
+        }
+      }
+      seg(a0, a1, '#00D4AA', homeName, (homeWin * 100).toFixed(0) + '%');
+      seg(a1, a2, '#9E9E9E', 'Hòa',     (draw * 100).toFixed(0) + '%');
+      seg(a2, a3, '#FF6B6B', awayName, (awayWin * 100).toFixed(0) + '%');
+
+      // Center "1 X 2"
+      ctx.font = 'bold 13px system-ui, sans-serif';
+      ctx.fillStyle = COLORS.text;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('KẾT QUẢ', cx, cy - 8);
+      ctx.font = '11px system-ui, sans-serif';
+      ctx.fillStyle = COLORS.textDim;
+      ctx.fillText('1 · X · 2', cx, cy + 8);
+    }
+    animate(800, drawFrame);
+  };
+
+  /* ====================================================================
+   *  11. SPARKLINE (form trajectory)
+   * ==================================================================== */
+  ChartRenderer.drawSparkline = function (canvasId, values, color) {
+    var c = prepCanvas(canvasId);
+    var ctx = c.ctx, W = c.w, H = c.h;
+    color = color || '#00D4AA';
+    if (!values || values.length === 0) return;
+
+    var padX = 4, padY = 6;
+    var chartW = W - padX * 2, chartH = H - padY * 2;
+    var min = 0, max = 100;
+    var n = values.length;
+    var stepX = chartW / Math.max(1, n - 1);
+
+    function drawFrame(progress) {
+      clearCanvas(ctx, W, H);
+
+      // Fill area under curve
+      ctx.beginPath();
+      ctx.moveTo(padX, padY + chartH);
+      for (var i = 0; i < n; i++) {
+        var x = padX + i * stepX;
+        var y = padY + chartH - ((values[i] - min) / (max - min)) * chartH;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.lineTo(padX + (n - 1) * stepX, padY + chartH);
+      ctx.closePath();
+      var grad = ctx.createLinearGradient(0, padY, 0, padY + chartH);
+      grad.addColorStop(0, hexToRGBA(color, 0.4));
+      grad.addColorStop(1, hexToRGBA(color, 0.0));
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Line
+      ctx.beginPath();
+      for (var j = 0; j < n; j++) {
+        var xj = padX + j * stepX;
+        var yj = padY + chartH - ((values[j] - min) / (max - min)) * chartH;
+        if (j === 0) ctx.moveTo(xj, yj);
+        else ctx.lineTo(xj, yj);
+      }
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.lineJoin = 'round';
+      ctx.stroke();
+
+      // Last point dot
+      var lastX = padX + (n - 1) * stepX;
+      var lastY = padY + chartH - ((values[n-1] - min) / (max - min)) * chartH;
+      ctx.beginPath();
+      ctx.arc(lastX, lastY, 3, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+    }
+    animate(500, drawFrame);
+  };
+
+  /* ====================================================================
+   *  12. HT/FT 3×3 GRID
+   * ==================================================================== */
+  ChartRenderer.drawHTFTGrid = function (canvasId, htFt) {
+    var c = prepCanvas(canvasId);
+    var ctx = c.ctx, W = c.w, H = c.h;
+    if (!htFt) return;
+
+    var labels = ['H', 'D', 'A'];
+    var rowLabels = ['H (hiệp 1)', 'D (hiệp 1)', 'A (hiệp 1)'];
+    var colLabels = ['H (cả trận)', 'D (cả trận)', 'A (cả trận)'];
+    var keys = [
+      ['H/H', 'H/D', 'H/A'],
+      ['D/H', 'D/D', 'D/A'],
+      ['A/H', 'A/D', 'A/A']
+    ];
+
+    var padTop = 36, padBot = 12, padX = 64;
+    var gridW = W - padX * 2, gridH = H - padTop - padBot;
+    var cellW = gridW / 3, cellH = gridH / 3;
+    var maxV = 0.01;
+    for (var i = 0; i < 3; i++) for (var j = 0; j < 3; j++) {
+      var v = htFt[keys[i][j]] || 0;
+      if (v > maxV) maxV = v;
+    }
+
+    function drawFrame(progress) {
+      clearCanvas(ctx, W, H);
+
+      // Column headers
+      ctx.font = 'bold 11px system-ui, sans-serif';
+      ctx.fillStyle = COLORS.text;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      for (var c2 = 0; c2 < 3; c2++) {
+        ctx.fillText(colLabels[c2], padX + c2 * cellW + cellW / 2, padTop - 8);
+      }
+      // Row headers
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      for (var r2 = 0; r2 < 3; r2++) {
+        ctx.fillText(rowLabels[r2], padX - 8, padTop + r2 * cellH + cellH / 2);
+      }
+
+      // Cells
+      for (var ci = 0; ci < 3; ci++) {
+        for (var cj = 0; cj < 3; cj++) {
+          var val = (htFt[keys[ci][cj]] || 0) * progress;
+          var t = val / maxV;
+          var x = padX + cj * cellW, y = padTop + ci * cellH;
+          // Background
+          ctx.fillStyle = 'rgba(255,255,255,0.04)';
+          ctx.fillRect(x + 1, y + 1, cellW - 2, cellH - 2);
+          // Tint
+          var alpha = 0.1 + t * 0.7;
+          ctx.fillStyle = hexToRGBA('#6C63FF', alpha);
+          ctx.fillRect(x + 1, y + 1, cellW - 2, cellH - 2);
+          // Text
+          ctx.font = 'bold 13px system-ui, sans-serif';
+          ctx.fillStyle = t > 0.4 ? '#FFFFFF' : COLORS.text;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText((val * 100).toFixed(1) + '%', x + cellW / 2, y + cellH / 2);
+        }
+      }
+    }
+    animate(700, drawFrame);
+  };
+
+  /* ====================================================================
+   *  13. GAUGE: WIN PROBABILITY (one-sided)
+   * ==================================================================== */
+  ChartRenderer.drawWinGauge = function (canvasId, homeWin, awayWin, homeName, awayName) {
+    var c = prepCanvas(canvasId);
+    var ctx = c.ctx, W = c.w, H = c.h;
+
+    var cx = W / 2, cy = H * 0.70;
+    var radius = Math.min(W * 0.40, H * 0.55);
+
+    function drawFrame(progress) {
+      clearCanvas(ctx, W, H);
+      var curH = homeWin * progress, curA = awayWin * progress;
+
+      // Half-circle background
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, Math.PI, 0, false);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(255,255,255,0.04)';
+      ctx.fill();
+
+      // Home portion (teal)
+      if (curH > 0) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, Math.PI, Math.PI - Math.PI * curH, true);
+        ctx.closePath();
+        ctx.fillStyle = '#00D4AA';
+        ctx.fill();
+      }
+      // Away portion (coral)
+      if (curA > 0) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * curA, false);
+        ctx.closePath();
+        ctx.fillStyle = '#FF6B6B';
+        ctx.fill();
+      }
+
+      // Labels
+      ctx.font = 'bold 14px system-ui, sans-serif';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = COLORS.text;
+      ctx.textAlign = 'right';
+      ctx.fillText((homeWin * 100).toFixed(0) + '%', cx - 8, cy - 14);
+      ctx.textAlign = 'left';
+      ctx.fillText((awayWin * 100).toFixed(0) + '%', cx + 8, cy - 14);
+
+      // Names below
+      ctx.font = '11px system-ui, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#00D4AA';
+      ctx.fillText(homeName || 'Home', cx - 12, cy + 20);
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#FF6B6B';
+      ctx.fillText(awayName || 'Away', cx + 12, cy + 20);
+    }
+    animate(700, drawFrame);
+  };
+
   /* ──────────────────────────────────────────────
    *  Expose on window
    * ────────────────────────────────────────────── */

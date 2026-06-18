@@ -4,7 +4,7 @@
  * 48 teams · 12 groups · 104 matches · 16 venues
  * Hosted by: USA, Canada, Mexico
  * 
- * Data current as of: June 17, 2026
+ * Data current as of: June 18, 2026
  * Format: window.WC2026_DATA global object (no imports/exports)
  */
 
@@ -1385,19 +1385,19 @@ window.WC2026_DATA = {
     // ── June 16 ──────────────────────────────────────────────────
     // Group J
     { id: 17, matchday: 1, group: 'J', round: 'Group Stage', date: '2026-06-16T13:00:00-04:00', homeTeam: 'ARG', awayTeam: 'ALG', stadium: 'Hard Rock Stadium',   city: 'Miami',            status: 'finished',  homeScore: 3, awayScore: 0, referee: 'François Letexier' },
-    // Group I — auto-closed (chưa có tỉ số thật, cập nhật tay khi có dữ liệu)
-    { id: 18, matchday: 1, group: 'I', round: 'Group Stage', date: '2026-06-16T16:00:00-04:00', homeTeam: 'FRA', awayTeam: 'SEN', stadium: 'AT&T Stadium',        city: 'Dallas',           status: 'finished', homeScore: 0, awayScore: 0, referee: 'Szymon Marciniak', _autoClosed: true },
-    { id: 19, matchday: 1, group: 'I', round: 'Group Stage', date: '2026-06-16T19:00:00-04:00', homeTeam: 'IRQ', awayTeam: 'NOR', stadium: 'Mercedes-Benz Stadium', city: 'Atlanta',        status: 'finished', homeScore: 0, awayScore: 0, referee: 'Ma Ning',          _autoClosed: true },
+    // Group I — 16/06 (đá xong 03:00-08:00 ICT 17/06)
+    { id: 18, matchday: 1, group: 'I', round: 'Group Stage', date: '2026-06-16T16:00:00-04:00', homeTeam: 'FRA', awayTeam: 'SEN', stadium: 'AT&T Stadium',        city: 'Dallas',           status: 'finished', homeScore: 3, awayScore: 0, referee: 'Szymon Marciniak' },
+    { id: 19, matchday: 1, group: 'I', round: 'Group Stage', date: '2026-06-16T19:00:00-04:00', homeTeam: 'IRQ', awayTeam: 'NOR', stadium: 'Mercedes-Benz Stadium', city: 'Atlanta',        status: 'finished', homeScore: 0, awayScore: 0, referee: 'Ma Ning' },
     // Group J
-    { id: 20, matchday: 1, group: 'J', round: 'Group Stage', date: '2026-06-16T21:00:00-04:00', homeTeam: 'AUT', awayTeam: 'JOR', stadium: 'Gillette Stadium',    city: 'Boston',           status: 'finished', homeScore: 0, awayScore: 0, referee: 'Victor Gomes',      _autoClosed: true },
+    { id: 20, matchday: 1, group: 'J', round: 'Group Stage', date: '2026-06-16T21:00:00-04:00', homeTeam: 'AUT', awayTeam: 'JOR', stadium: 'Gillette Stadium',    city: 'Boston',           status: 'finished', homeScore: 1, awayScore: 2, referee: 'Victor Gomes' },
 
     // ── June 17 ──────────────────────────────────────────────────
-    // Group K
-    { id: 21, matchday: 1, group: 'K', round: 'Group Stage', date: '2026-06-17T13:00:00-04:00', homeTeam: 'POR', awayTeam: 'COD', stadium: 'Lincoln Financial Field', city: 'Philadelphia', status: 'scheduled', homeScore: null, awayScore: null, referee: 'Clément Turpin' },
-    { id: 22, matchday: 1, group: 'K', round: 'Group Stage', date: '2026-06-17T16:00:00-04:00', homeTeam: 'UZB', awayTeam: 'COL', stadium: 'Arrowhead Stadium',   city: 'Kansas City',      status: 'scheduled', homeScore: null, awayScore: null, referee: 'Mustapha Ghorbal' },
+    // Group K (đá xong trong ngày 17/06 theo giờ EDT)
+    { id: 21, matchday: 1, group: 'K', round: 'Group Stage', date: '2026-06-17T13:00:00-04:00', homeTeam: 'POR', awayTeam: 'COD', stadium: 'Lincoln Financial Field', city: 'Philadelphia', status: 'finished', homeScore: 2, awayScore: 1, referee: 'Clément Turpin' },
+    { id: 22, matchday: 1, group: 'K', round: 'Group Stage', date: '2026-06-17T16:00:00-04:00', homeTeam: 'UZB', awayTeam: 'COL', stadium: 'Arrowhead Stadium',   city: 'Kansas City',      status: 'finished', homeScore: 0, awayScore: 3, referee: 'Mustapha Ghorbal' },
     // Group L
-    { id: 23, matchday: 1, group: 'L', round: 'Group Stage', date: '2026-06-17T19:00:00-04:00', homeTeam: 'ENG', awayTeam: 'CRO', stadium: 'MetLife Stadium',     city: 'New York/New Jersey', status: 'scheduled', homeScore: null, awayScore: null, referee: 'Danny Makkelie' },
-    { id: 24, matchday: 1, group: 'L', round: 'Group Stage', date: '2026-06-17T21:00:00-04:00', homeTeam: 'GHA', awayTeam: 'PAN', stadium: 'NRG Stadium',         city: 'Houston',          status: 'scheduled', homeScore: null, awayScore: null, referee: 'Wilton Sampaio' },
+    { id: 23, matchday: 1, group: 'L', round: 'Group Stage', date: '2026-06-17T19:00:00-04:00', homeTeam: 'ENG', awayTeam: 'GHA', stadium: 'MetLife Stadium',     city: 'New York/New Jersey', status: 'finished', homeScore: 3, awayScore: 0, referee: 'Danny Makkelie' },
+    { id: 24, matchday: 1, group: 'L', round: 'Group Stage', date: '2026-06-17T21:00:00-04:00', homeTeam: 'CRO', awayTeam: 'PAN', stadium: 'NRG Stadium',         city: 'Houston',          status: 'finished', homeScore: 2, awayScore: 1, referee: 'Wilton Sampaio' },
 
     // ╔═══════════════════════════════════════════════════════════╗
     // ║  MATCHDAY 2 — Group Stage                                ║
@@ -1448,8 +1448,8 @@ window.WC2026_DATA = {
     { id: 45, matchday: 2, group: 'K', round: 'Group Stage', date: '2026-06-23T13:00:00-07:00', homeTeam: 'POR', awayTeam: 'UZB', stadium: "Levi's Stadium",     city: 'San Francisco',    status: 'scheduled', homeScore: null, awayScore: null, referee: null },
     { id: 46, matchday: 2, group: 'K', round: 'Group Stage', date: '2026-06-23T18:00:00-04:00', homeTeam: 'COD', awayTeam: 'COL', stadium: 'Lincoln Financial Field', city: 'Philadelphia', status: 'scheduled', homeScore: null, awayScore: null, referee: null },
     // Group L MD2
-    { id: 47, matchday: 2, group: 'L', round: 'Group Stage', date: '2026-06-23T19:00:00-04:00', homeTeam: 'ENG', awayTeam: 'GHA', stadium: 'Gillette Stadium',    city: 'Boston',           status: 'scheduled', homeScore: null, awayScore: null, referee: null },
-    { id: 48, matchday: 2, group: 'L', round: 'Group Stage', date: '2026-06-23T21:00:00-05:00', homeTeam: 'CRO', awayTeam: 'PAN', stadium: 'Estadio Azteca',      city: 'Mexico City',      status: 'scheduled', homeScore: null, awayScore: null, referee: null },
+    { id: 47, matchday: 2, group: 'L', round: 'Group Stage', date: '2026-06-23T19:00:00-04:00', homeTeam: 'ENG', awayTeam: 'CRO', stadium: 'Gillette Stadium',    city: 'Boston',           status: 'scheduled', homeScore: null, awayScore: null, referee: null },
+    { id: 48, matchday: 2, group: 'L', round: 'Group Stage', date: '2026-06-23T21:00:00-05:00', homeTeam: 'GHA', awayTeam: 'PAN', stadium: 'Estadio Azteca',      city: 'Mexico City',      status: 'scheduled', homeScore: null, awayScore: null, referee: null },
 
     // ╔═══════════════════════════════════════════════════════════╗
     // ║  MATCHDAY 3 — Group Stage  (simultaneous kickoffs)       ║

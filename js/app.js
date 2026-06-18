@@ -31,65 +31,105 @@
     async init() {
       console.log('[App] 🚀 Khởi tạo WC2026 Predictor...');
 
+      // SAFETY: Always hide loading after max 5 seconds, no matter what
+      const safetyTimer = setTimeout(() => {
+        console.warn('[App] Safety timeout - force hiding loading overlay');
+        this.hideLoading();
+      }, 5000);
+
       try {
         this.updateLoadingStatus('Đang khởi tạo hệ thống...');
         this.updateLoadingProgress(10);
 
         // Initialize services
-        this.dataService = new window.DataService();
+        try {
+          this.dataService = new window.DataService();
+        } catch (e) {
+          console.error('[App] DataService init error:', e);
+          this.dataService = null;
+        }
         this.updateLoadingProgress(20);
 
         // Initialize prediction engine
-        if (window.PredictionEngine) {
-          this.engine = new window.PredictionEngine(this.data);
-          this.updateLoadingStatus('Mô hình AI đã sẵn sàng');
-        } else {
-          console.warn('[App] PredictionEngine không tìm thấy, dự đoán sẽ bị giới hạn');
+        try {
+          if (window.PredictionEngine) {
+            this.engine = new window.PredictionEngine(this.data);
+            this.updateLoadingStatus('Mô hình AI đã sẵn sàng');
+          } else {
+            console.warn('[App] PredictionEngine không tìm thấy');
+          }
+        } catch (e) {
+          console.error('[App] PredictionEngine init error:', e);
         }
         this.updateLoadingProgress(40);
 
-        // Fetch data
-        this.updateLoadingStatus('Đang tải dữ liệu trận đấu...');
-        this.matchesData = await this.dataService.fetchMatches();
+        // Fetch data - each in its own try-catch
+        try {
+          this.updateLoadingStatus('Đang tải dữ liệu trận đấu...');
+          if (this.dataService) {
+            this.matchesData = await this.dataService.fetchMatches();
+          }
+        } catch (e) {
+          console.error('[App] fetchMatches error:', e);
+          this.matchesData = [];
+        }
         this.updateLoadingProgress(60);
 
-        this.updateLoadingStatus('Đang tải bảng xếp hạng...');
-        this.standingsData = await this.dataService.fetchStandings();
+        try {
+          this.updateLoadingStatus('Đang tải bảng xếp hạng...');
+          if (this.dataService) {
+            this.standingsData = await this.dataService.fetchStandings();
+          }
+        } catch (e) {
+          console.error('[App] fetchStandings error:', e);
+          this.standingsData = {};
+        }
         this.updateLoadingProgress(75);
 
-        this.updateLoadingStatus('Đang tính toán thống kê...');
-        this.tournamentStats = await this.dataService.getTournamentStats();
+        try {
+          this.updateLoadingStatus('Đang tính toán thống kê...');
+          if (this.dataService) {
+            this.tournamentStats = await this.dataService.getTournamentStats();
+          }
+        } catch (e) {
+          console.error('[App] getTournamentStats error:', e);
+          this.tournamentStats = {};
+        }
         this.updateLoadingProgress(85);
 
         // Setup UI
         this.updateLoadingStatus('Đang dựng giao diện...');
-        this.setupEventListeners();
-        this.renderDashboard();
-        this.startCountdown();
+        try { this.setupEventListeners(); } catch (e) { console.error('[App] setupEventListeners error:', e); }
+        try { this.renderDashboard(); } catch (e) { console.error('[App] renderDashboard error:', e); }
+        try { this.startCountdown(); } catch (e) { console.error('[App] startCountdown error:', e); }
         this.updateLoadingProgress(100);
 
         // Hide loading overlay
+        clearTimeout(safetyTimer);
         setTimeout(() => {
           this.hideLoading();
           this.showToast('Chào mừng đến với WC2026 Predictor! ⚽', 'success');
         }, 500);
 
         // Start auto-refresh
-        this.startAutoRefresh();
+        try { this.startAutoRefresh(); } catch (e) { console.error('[App] startAutoRefresh error:', e); }
 
         // Log data source status
-        const status = this.dataService.getDataSourceStatus();
-        console.log('[App] Trạng thái nguồn dữ liệu:', status);
+        if (this.dataService) {
+          const status = this.dataService.getDataSourceStatus();
+          console.log('[App] Trạng thái nguồn dữ liệu:', status);
+        }
 
       } catch (error) {
         console.error('[App] Lỗi khởi tạo:', error);
+        clearTimeout(safetyTimer);
         this.updateLoadingStatus('Đã xảy ra lỗi, đang thử lại...');
 
         // Still try to show something
         setTimeout(() => {
           this.hideLoading();
           this.showToast('Không tải được dữ liệu trực tuyến, dùng dữ liệu ngoại tuyến', 'error');
-          this.renderDashboard();
+          try { this.renderDashboard(); } catch (e) { console.error('[App] renderDashboard fallback error:', e); }
         }, 1000);
       }
     }
@@ -165,6 +205,24 @@
         });
       }
 
+      // Theme toggle
+      const themeToggle = document.getElementById('theme-toggle');
+      if (themeToggle) {
+        // Restore saved theme
+        const saved = localStorage.getItem('wc2026-theme');
+        if (saved) this.setTheme(saved);
+        themeToggle.addEventListener('click', () => {
+          const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+          this.setTheme(cur === 'dark' ? 'light' : 'dark');
+        });
+      }
+
+      // Refresh button
+      const refreshBtn = document.getElementById('refresh-btn');
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => this.manualRefresh());
+      }
+
       // Keyboard shortcut: 1-4 for tabs
       document.addEventListener('keydown', (e) => {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
@@ -174,6 +232,38 @@
           this.switchTab(tabs[idx]);
         }
       });
+
+      // Track mouse position for radial hover effects on cards
+      document.addEventListener('mousemove', (e) => {
+        const target = e.target.closest && e.target.closest('.match-card, .glass-card');
+        if (target) {
+          const rect = target.getBoundingClientRect();
+          target.style.setProperty('--mx', ((e.clientX - rect.left) / rect.width * 100) + '%');
+          target.style.setProperty('--my', ((e.clientY - rect.top) / rect.height * 100) + '%');
+        }
+      });
+    }
+
+    setTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('wc2026-theme', theme);
+      const btn = document.getElementById('theme-toggle');
+      if (btn) btn.textContent = theme === 'light' ? '☀️' : '🌙';
+    }
+
+    async manualRefresh() {
+      this.showToast('Đang làm mới dữ liệu...', 'info', 2000);
+      try {
+        this.dataService.clearCache();
+        this.matchesData = await this.dataService.fetchMatches();
+        this.standingsData = await this.dataService.fetchStandings();
+        this.tournamentStats = await this.dataService.getTournamentStats();
+        if (this.currentTab === 'dashboard') this.renderDashboard();
+        if (this.selectedMatch) this.renderPrediction(this.selectedMatch.id);
+        this.showToast('Đã cập nhật dữ liệu mới nhất ✅', 'success');
+      } catch (e) {
+        this.showToast('Lỗi khi làm mới: ' + e.message, 'error');
+      }
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -566,8 +656,6 @@
      */
     normalizeEnginePrediction(raw) {
       if (!raw) return null;
-      const homeTeamData = raw.homeTeam || {};
-      const awayTeamData = raw.awayTeam || {};
 
       // Build radar data from factors
       const radarLabels = ['Tấn Công', 'Phòng Ngự', 'Phong Độ', 'Kinh Nghiệm', 'Xếp Hạng', 'Chiến Thuật'];
@@ -579,7 +667,7 @@
         if (fMap['Attack Strength']) { radarHome[0] = (fMap['Attack Strength'].homeValue || 50); radarAway[0] = (fMap['Attack Strength'].awayValue || 50); }
         if (fMap['Defense Strength']) { radarHome[1] = (fMap['Defense Strength'].homeValue || 50); radarAway[1] = (fMap['Defense Strength'].awayValue || 50); }
         if (fMap['Recent Form']) { radarHome[2] = parseFloat(fMap['Recent Form'].homeValue) || 50; radarAway[2] = parseFloat(fMap['Recent Form'].awayValue) || 50; }
-        if (fMap['Squad Experience']) { radarHome[3] = parseFloat(fMap['Squad Experience'].homeValue) || 50; radarAway[3] = parseFloat(fMap['Squad Experience'].awayValue) || 50; }
+        if (fMap['Squad Experience']) { radarHome[3] = parseFloat(fMap['Squad Experience'].homeValue) || 50; radarAway[3] = parseFloat(fMap['Squad Experience'].awayValue) || 50); }
         if (fMap['FIFA Ranking']) { radarHome[4] = 100 - (typeof fMap['FIFA Ranking'].homeValue === 'number' ? fMap['FIFA Ranking'].homeValue : 50); radarAway[4] = 100 - (typeof fMap['FIFA Ranking'].awayValue === 'number' ? fMap['FIFA Ranking'].awayValue : 50); }
         if (fMap['Tactical Matchup']) { radarHome[5] = 50 + (fMap['Tactical Matchup'].impact || 0) * 500; radarAway[5] = 50 - (fMap['Tactical Matchup'].impact || 0) * 500; }
       }
@@ -609,18 +697,39 @@
         confidence: (raw.confidence || 0.5) * 100,
         xG: {
           home: raw.homeExpectedGoals || 0,
-          away: raw.awayExpectedGoals || 0
+          away: raw.awayExpectedGoals || 0,
+          total: raw.totalGoalsExpected || 0
         },
+        over05: (raw.over05Prob || 0) * 100,
+        over15: (raw.over15Prob || 0) * 100,
         over25: (raw.over25Prob || 0.5) * 100,
+        over35: (raw.over35Prob || 0) * 100,
+        over45: (raw.over45Prob || 0) * 100,
         under25: (raw.under25Prob || 0.5) * 100,
         btts: (raw.bttsProb || 0.5) * 100,
+        bttsNo: (raw.bttsNoProb || 0) * 100,
+        homeCleanSheet: (raw.homeCleanSheet || 0) * 100,
+        awayCleanSheet: (raw.awayCleanSheet || 0) * 100,
+        doubleChanceHomeDraw: (raw.doubleChanceHomeDraw || 0) * 100,
+        doubleChanceAwayDraw: (raw.doubleChanceAwayDraw || 0) * 100,
+        doubleChanceHomeAway: (raw.doubleChanceHomeAway || 0) * 100,
+        drawNoBetHome: (raw.drawNoBetHome || 0) * 100,
+        drawNoBetAway: (raw.drawNoBetAway || 0) * 100,
         scoreMatrix: raw.scoreMatrix || [],
+        topScores: raw.topScores || [],
+        winMargin: raw.winMargin || {},
+        htResult: raw.htResult || null,
+        htFt: raw.htFt || null,
+        lambdas: raw.lambdas || { home: 1.35, away: 1.35 },
+        formTrajectory: raw.formTrajectory || null,
         radarData: {
           labels: radarLabels,
           home: radarHome,
           away: radarAway
         },
-        factors: normalizedFactors
+        factors: normalizedFactors,
+        // raw data pass-through for AI report
+        _raw: raw
       };
     }
 
@@ -724,11 +833,31 @@
       this.setTextContent('score-away-name', awayName);
       this.setTextContent('confidence-value', Math.round(prediction.confidence || 0) + '%');
 
+      // ── Modern 1X2 widget ──
+      this.setTextContent('home-prob-pct', Math.round(prediction.homeWin || 0) + '%');
+      this.setTextContent('away-prob-pct', Math.round(prediction.awayWin || 0) + '%');
+      this.setTextContent('home-prob-name', homeName);
+      this.setTextContent('away-prob-name', awayName);
+      this.setTextContent('draw-prob-pill', 'Hòa ' + Math.round(prediction.draw || 0) + '%');
+      this.animateBar('home-prob-fill', prediction.homeWin || 0);
+      this.animateBar('away-prob-fill', prediction.awayWin || 0);
+
+      // ── AI Pitch Report panel ──
+      try {
+        const aiPanel = document.getElementById('ai-report-panel');
+        const aiText = document.getElementById('ai-report-text');
+        if (aiPanel && aiText && this.engine && prediction._raw) {
+          const report = this.engine.getAIPitchReport(prediction._raw, 'vi');
+          aiText.textContent = report;
+          aiPanel.style.display = 'block';
+        }
+      } catch (e) { console.warn('[App] AI report error', e); }
+
       // ── Update factors table header ──
       this.setTextContent('factors-th-home', homeName);
       this.setTextContent('factors-th-away', awayName);
 
-      // ── Over/Under ──
+      // ── Over/Under (legacy) ──
       const over25 = prediction.over25 || 50;
       const under25 = prediction.under25 || (100 - over25);
       this.animateBar('over25-bar', over25);
@@ -736,20 +865,19 @@
       this.setTextContent('over25-value', Math.round(over25) + '%');
       this.setTextContent('under25-value', Math.round(under25) + '%');
 
-      // ── BTTS ──
+      // ── BTTS (legacy) ──
       const btts = prediction.btts || 50;
       this.setTextContent('btts-value', Math.round(btts) + '%');
       this.setTextContent('btts-yes-label', 'Có: ' + Math.round(btts) + '%');
       this.setTextContent('btts-no-label', 'Không: ' + Math.round(100 - btts) + '%');
-      // Animate SVG circle
       const bttsFill = document.getElementById('btts-circle-fill');
       if (bttsFill) {
-        const circumference = 2 * Math.PI * 42; // r=42
+        const circumference = 2 * Math.PI * 42;
         const offset = circumference - (btts / 100) * circumference;
         setTimeout(() => { bttsFill.style.strokeDashoffset = offset; }, 200);
       }
 
-      // ── Expected Goals ──
+      // ── Expected Goals (legacy card) ──
       const xgHome = prediction.xG ? prediction.xG.home : 0;
       const xgAway = prediction.xG ? prediction.xG.away : 0;
       this.setTextContent('xg-home-flag', homeFlag);
@@ -758,11 +886,60 @@
       this.setTextContent('xg-away-value', (typeof xgAway === 'number' ? xgAway.toFixed(2) : '0.00'));
       this.setTextContent('xg-total-value', ((xgHome + xgAway) || 0).toFixed(2));
 
-      // ── Render Charts ──
+      // ── Markets grid (new) ──
+      this.setTextContent('mkt-dc-1x',  Math.round(prediction.doubleChanceHomeDraw || 0) + '%');
+      this.setTextContent('mkt-dc-x2',  Math.round(prediction.doubleChanceAwayDraw || 0) + '%');
+      this.setTextContent('mkt-dc-12',  Math.round(prediction.doubleChanceHomeAway || 0) + '%');
+      this.setTextContent('mkt-dnb-h',  Math.round(prediction.drawNoBetHome || 0) + '%');
+      this.setTextContent('mkt-dnb-a',  Math.round(prediction.drawNoBetAway || 0) + '%');
+      this.setTextContent('mkt-over05', Math.round(prediction.over05 || 0) + '%');
+      this.setTextContent('mkt-over15', Math.round(prediction.over15 || 0) + '%');
+      this.setTextContent('mkt-over35', Math.round(prediction.over35 || 0) + '%');
+      this.setTextContent('mkt-over45', Math.round(prediction.over45 || 0) + '%');
+
+      // ── Top scores list ──
+      this.renderTopScores(prediction.topScores || [], homeName, awayName);
+
+      // ── Render Charts (all) ──
       this.renderPredictionCharts(prediction, homeName, awayName, homeFlag, awayFlag);
+
+      // ── Form sparklines ──
+      this.renderFormSparklines(prediction.formTrajectory, homeName, awayName);
 
       // ── Factors Table ──
       this.renderFactorsTable(prediction.factors || []);
+    }
+
+    renderTopScores(topScores, homeName, awayName) {
+      const list = document.getElementById('top-scores-list');
+      if (!list) return;
+      if (!topScores || !topScores.length) {
+        list.innerHTML = '<div style="color:var(--text-muted); grid-column:1/-1;">Không có dữ liệu</div>';
+        return;
+      }
+      list.innerHTML = topScores.map((s, i) => `
+        <div class="top-score-chip ${i === 0 ? 'is-top' : ''}" data-tooltip="${homeName} ${s.home} – ${s.away} ${awayName}">
+          <span class="top-score-num">${s.home}–${s.away}</span>
+          <span class="top-score-pct">${(s.prob * 100).toFixed(1)}%</span>
+        </div>
+      `).join('');
+    }
+
+    renderFormSparklines(formExtra, homeName, awayName) {
+      const hLabel = document.getElementById('form-spark-home-label');
+      const aLabel = document.getElementById('form-spark-away-label');
+      if (hLabel) hLabel.textContent = '🏠 ' + (homeName || 'Đội nhà');
+      if (aLabel) aLabel.textContent = '✈️ ' + (awayName || 'Đội khách');
+
+      if (!formExtra || !window.ChartRenderer) return;
+      try {
+        if (formExtra.homeSpark) {
+          window.ChartRenderer.drawSparkline('form-spark-home', formExtra.homeSpark.map(v => v * 100), '#00D4AA');
+        }
+        if (formExtra.awaySpark) {
+          window.ChartRenderer.drawSparkline('form-spark-away', formExtra.awaySpark.map(v => v * 100), '#FF6B6B');
+        }
+      } catch (e) { console.warn('[App] sparkline error', e); }
     }
 
     renderPredictionCharts(prediction, homeName, awayName, homeFlag, awayFlag) {
@@ -773,8 +950,7 @@
       }
 
       try {
-        // 1. Probability Bars — charts.js: drawProbabilityBars(canvasId, homeWin, draw, awayWin, homeTeam, awayTeam)
-        //    Note: charts.js expects 0-1 fractions, not percentages
+        // 1. Probability Bars
         window.ChartRenderer.drawProbabilityBars(
           'prob-bars-chart',
           (prediction.homeWin || 33) / 100,
@@ -794,8 +970,7 @@
           `;
         }
 
-        // 2. Confidence Gauge — charts.js: drawConfidenceGauge(canvasId, confidence)
-        //    Note: charts.js expects 0-1 fraction
+        // 2. Confidence Gauge
         window.ChartRenderer.drawConfidenceGauge(
           'confidence-gauge',
           (prediction.confidence || 50) / 100
@@ -806,8 +981,60 @@
           gaugeDisplay.textContent = Math.round(prediction.confidence || 50) + '% Tin cậy';
         }
 
-        // 3. Radar Chart — charts.js: drawRadarChart(canvasId, homeStats, awayStats, labels, homeColor, awayColor)
-        //    Note: expects two flat arrays of stats (0-1 scale) and labels array
+        // 3. Probability Donut (1X2)
+        const donut = document.getElementById('prob-donut-chart');
+        if (donut) {
+          window.ChartRenderer.drawProbabilityDonut(
+            'prob-donut-chart',
+            (prediction.homeWin || 33) / 100,
+            (prediction.draw || 34) / 100,
+            (prediction.awayWin || 33) / 100,
+            homeName,
+            awayName
+          );
+        }
+
+        // 4. Win margin distribution
+        if (prediction.winMargin && Object.keys(prediction.winMargin).length > 0) {
+          window.ChartRenderer.drawWinMarginChart(
+            'win-margin-chart',
+            prediction.winMargin,
+            homeName,
+            awayName
+          );
+        }
+
+        // 5. xG comparison
+        const xgChart = document.getElementById('xg-chart');
+        if (xgChart) {
+          window.ChartRenderer.drawXGChart(
+            'xg-chart',
+            (prediction.xG && prediction.xG.home) || 0,
+            (prediction.xG && prediction.xG.away) || 0,
+            homeName,
+            awayName
+          );
+        }
+
+        // 6. Clean sheet / BTTS donut
+        const csDonut = document.getElementById('cs-donut-chart');
+        if (csDonut) {
+          window.ChartRenderer.drawCleanSheetDonut(
+            'cs-donut-chart',
+            (prediction.homeCleanSheet || 0) / 100,
+            (prediction.awayCleanSheet || 0) / 100,
+            (prediction.btts || 0) / 100,
+            homeName,
+            awayName
+          );
+        }
+
+        // 7. HT/FT 3x3
+        if (prediction.htFt) {
+          window.ChartRenderer.drawHTFTGrid('htft-chart', prediction.htFt);
+        }
+
+        // 8. Radar Chart
         if (prediction.radarData) {
           const radarHome = prediction.radarData.home.map(v => Math.min(1, v / 100));
           const radarAway = prediction.radarData.away.map(v => Math.min(1, v / 100));
@@ -829,7 +1056,7 @@
           }
         }
 
-        // 4. Score Matrix Heatmap — charts.js: drawScoreHeatmap(canvasId, scoreMatrix, homeTeam, awayTeam)
+        // 9. Score Matrix Heatmap
         if (prediction.scoreMatrix && prediction.scoreMatrix.length > 0) {
           window.ChartRenderer.drawScoreHeatmap(
             'score-heatmap',
@@ -839,8 +1066,7 @@
           );
         }
 
-        // 5. Factors Chart — charts.js: drawFactorsChart(canvasId, factors)
-        //    factors expected shape: [{ name, impact, advantage }]
+        // 10. Factors Chart
         if (prediction.factors && prediction.factors.length > 0) {
           const chartFactors = prediction.factors.map(f => ({
             name: f.name,
