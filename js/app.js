@@ -1249,9 +1249,11 @@
       }
 
       // Calculate or use fetched standings
-      const standings = Object.keys(this.standingsData).length > 0
+      const hasValidStandings = Object.values(this.standingsData).some(g => g && g.length > 0);
+      const standings = hasValidStandings
         ? this.standingsData
         : this.dataService.calculateStandingsFromFixtures();
+
 
       groupCodes.forEach(groupCode => {
         const tbody = document.getElementById(`group-${groupCode}-body`);
@@ -1584,7 +1586,7 @@
     const promptText = `Bạn là một chuyên gia phân tích và bình luận viên bóng đá hàng đầu.\nNhiệm vụ của bạn là phân tích trận đấu World Cup 2026 giữa ${homeName} và ${awayName}.\n\n${liveCtx}\n\n${predictionText}\n\nYêu cầu:\n1. Viết một đoạn nhận định chuyên sâu (khoảng 3-4 câu ngắn gọn, súc tích).\n2. Phân tích lý do tại sao hệ thống lại đưa ra dự đoán trên (dựa trên sức mạnh, chiến thuật, hoặc thông số live nếu có).\n3. Đưa ra lời khuyên cho người xem trận này nên kỳ vọng kịch bản nào.\n4. Giọng điệu chuyên nghiệp, cuốn hút, dùng từ ngữ chuyên môn (ví dụ: pressing, momentum, xG, khối đội hình).\n5. Trình bày bằng Tiếng Việt, sử dụng in đậm cho các từ khóa quan trọng. Không lặp lại các con số một cách máy móc.`;
 
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
