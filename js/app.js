@@ -1531,6 +1531,94 @@
     }
 
     // ═══════════════════════════════════════════════════════════════════════
+
+  // =======================================================================
+  // GEMINI AI INTEGRATION
+  // =======================================================================
+
+  async askGeminiForAnalysis() {
+    let apiKey = localStorage.getItem('gemini_api_key') || '';
+    if (!apiKey || apiKey.length < 10) {
+      apiKey = prompt("Vui lòng nhập API Key của Gemini Pro:");
+      if (!apiKey) return;
+      localStorage.setItem('gemini_api_key', apiKey);
+    }
+
+    if (!this.selectedMatch) {
+       this.showToast('Vui lòng chọn một trận đấu trước!', 'error');
+       return;
+    }
+
+    const reportText = document.getElementById('ai-report-text');
+    const loadingIndicator = document.getElementById('ai-loading-indicator');
+    const btn = document.getElementById('ask-gemini-btn');
+    
+    reportText.innerText = '';
+    loadingIndicator.style.display = 'flex';
+    btn.disabled = true;
+    btn.style.opacity = '0.7';
+    
+    const homeName = this.selectedMatch.homeTeam.nameVi || this.selectedMatch.homeTeam.name;
+    const awayName = this.selectedMatch.awayTeam.nameVi || this.selectedMatch.awayTeam.name;
+    
+    // Build context payload
+    let liveCtx = '';
+    if (window.liveMatchStats && window.liveMatchStats[this.selectedMatch.id]) {
+       const ls = window.liveMatchStats[this.selectedMatch.id];
+       liveCtx = `TÌNH TRẠNG TRẬN ĐẤU: Đang diễn ra (LIVE).\nThông số trực tiếp:\n- Kiểm soát bóng: ${homeName} ${ls.homePossession}% - ${ls.awayPossession}% ${awayName}\n- Sút trúng đích: ${homeName} ${ls.homeShotsOnTarget} - ${ls.awayShotsOnTarget} ${awayName}\n- Thẻ đỏ: ${homeName} ${ls.homeRedCards} - ${ls.awayRedCards} ${awayName}`;
+    }
+
+    // Attempt to get prediction from UI
+    let predictionText = '';
+    try {
+        const hProb = document.getElementById('home-prob-pct').innerText;
+        const aProb = document.getElementById('away-prob-pct').innerText;
+        const dProb = document.getElementById('draw-prob-pill').innerText;
+        const scoreH = document.getElementById('predicted-home-score').innerText;
+        const scoreA = document.getElementById('predicted-away-score').innerText;
+        predictionText = `AI CỦA HỆ THỐNG DỰ ĐOÁN:\n- Xác suất: ${homeName} thắng ${hProb}, ${dProb}, ${awayName} thắng ${aProb}.\n- Tỷ số dự đoán cao nhất: ${homeName} ${scoreH} - ${scoreA} ${awayName}.`;
+    } catch(e) {}
+
+    const promptText = `Bạn là một chuyên gia phân tích và bình luận viên bóng đá hàng đầu.\nNhiệm vụ của bạn là phân tích trận đấu World Cup 2026 giữa ${homeName} và ${awayName}.\n\n${liveCtx}\n\n${predictionText}\n\nYêu cầu:\n1. Viết một đoạn nhận định chuyên sâu (khoảng 3-4 câu ngắn gọn, súc tích).\n2. Phân tích lý do tại sao hệ thống lại đưa ra dự đoán trên (dựa trên sức mạnh, chiến thuật, hoặc thông số live nếu có).\n3. Đưa ra lời khuyên cho người xem trận này nên kỳ vọng kịch bản nào.\n4. Giọng điệu chuyên nghiệp, cuốn hút, dùng từ ngữ chuyên môn (ví dụ: pressing, momentum, xG, khối đội hình).\n5. Trình bày bằng Tiếng Việt, sử dụng in đậm cho các từ khóa quan trọng. Không lặp lại các con số một cách máy móc.`;
+
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: promptText }] }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 250 }
+        })
+      });
+
+      if (!response.ok) {
+         if (response.status === 400 || response.status === 403) {
+            localStorage.removeItem('gemini_api_key');
+            throw new Error('API Key không hợp lệ hoặc đã hết hạn.');
+         }
+         throw new Error('Lỗi máy chủ Gemini: ' + response.status);
+      }
+
+      const data = await response.json();
+      const textResponse = data.candidates[0].content.parts[0].text;
+      
+      loadingIndicator.style.display = 'none';
+      
+      // We will just inject the raw HTML (rendered markdown from gemini)
+      const formattedText = textResponse.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*/g, '').replace(/\n/g, '<br>');
+      reportText.innerHTML = formattedText;
+      
+    } catch (err) {
+      loadingIndicator.style.display = 'none';
+      reportText.innerText = '❌ Lỗi AI: ' + err.message;
+    } finally {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+    }
+  }
+
     // COUNTDOWN TIMER
     // ═══════════════════════════════════════════════════════════════════════
 
