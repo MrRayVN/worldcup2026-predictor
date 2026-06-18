@@ -610,7 +610,7 @@
       }
 
       // Fallback: Calculate from embedded data
-      if (!standings) {
+      if (!standings || Object.keys(standings).length === 0) {
         standings = this.calculateStandingsFromFixtures();
         console.log('[DataService] Tính bảng xếp hạng từ dữ liệu nhúng');
       }

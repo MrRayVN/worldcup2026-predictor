@@ -957,14 +957,15 @@
       this.animateBar('home-prob-fill', prediction.homeWin || 0);
       this.animateBar('away-prob-fill', prediction.awayWin || 0);
 
-      // ── AI Pitch Report panel ──
+            // 🎯 AI Pitch Report panel 🎯
       try {
         const aiPanel = document.getElementById('ai-report-panel');
         const aiText = document.getElementById('ai-report-text');
-        if (aiPanel && aiText && this.engine && prediction._raw) {
-          const report = this.engine.getAIPitchReport(prediction._raw, 'vi');
-          aiText.textContent = report;
+        const geminiBtn = document.getElementById('ask-gemini-btn');
+        if (aiPanel && aiText && geminiBtn) {
+          aiText.innerHTML = '💡 Bấm <b>✨ Xin ý kiến Chuyên gia Gemini</b> để AI tổng hợp dữ liệu trận này và đưa ra nhận định chuyên sâu...';
           aiPanel.style.display = 'block';
+          geminiBtn.onclick = () => this.askGeminiForAnalysis();
         }
       } catch (e) { console.warn('[App] AI report error', e); }
 
