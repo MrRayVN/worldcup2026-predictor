@@ -690,7 +690,7 @@
         if (fMap['Attack Strength']) { radarHome[0] = (fMap['Attack Strength'].homeValue || 50); radarAway[0] = (fMap['Attack Strength'].awayValue || 50); }
         if (fMap['Defense Strength']) { radarHome[1] = (fMap['Defense Strength'].homeValue || 50); radarAway[1] = (fMap['Defense Strength'].awayValue || 50); }
         if (fMap['Recent Form']) { radarHome[2] = parseFloat(fMap['Recent Form'].homeValue) || 50; radarAway[2] = parseFloat(fMap['Recent Form'].awayValue) || 50; }
-        if (fMap['Squad Experience']) { radarHome[3] = parseFloat(fMap['Squad Experience'].homeValue) || 50; radarAway[3] = parseFloat(fMap['Squad Experience'].awayValue) || 50); }
+        if (fMap['Squad Experience']) { radarHome[3] = parseFloat(fMap['Squad Experience'].homeValue) || 50; radarAway[3] = parseFloat(fMap['Squad Experience'].awayValue) || 50; }
         if (fMap['FIFA Ranking']) { radarHome[4] = 100 - (typeof fMap['FIFA Ranking'].homeValue === 'number' ? fMap['FIFA Ranking'].homeValue : 50); radarAway[4] = 100 - (typeof fMap['FIFA Ranking'].awayValue === 'number' ? fMap['FIFA Ranking'].awayValue : 50); }
         if (fMap['Tactical Matchup']) { radarHome[5] = 50 + (fMap['Tactical Matchup'].impact || 0) * 500; radarAway[5] = 50 - (fMap['Tactical Matchup'].impact || 0) * 500; }
       }
