@@ -1735,7 +1735,8 @@
     async refreshLiveData() {
       try {
         // Clear match cache to get fresh data
-        this.dataService.clearCacheEntry('matches_{}');
+        const todayKey = new Date().toISOString().split('T')[0];
+        this.dataService.clearCacheEntry('matches_all_' + todayKey);
 
         const newMatches = await this.dataService.fetchMatches();
         const hasChanges = this.detectChanges(this.matchesData, newMatches);

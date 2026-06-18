@@ -541,6 +541,10 @@
     // The 20-factor composite in roughly [-0.3, 0.3]
     var compositeDelta = hWS - aWS;
 
+    // 0.15 → ~16% lambda boost (mirrors real bookmaker market moves)
+    var homeFactorMul = 1 + compositeDelta * 0.55;
+    var awayFactorMul = 1 - compositeDelta * 0.55;
+
     // LIVE MOMENTUM INJECTION
     if (liveStats && liveStats.isActive) {
         var homePoss = liveStats.homePossession || 50;
@@ -564,10 +568,6 @@
         homeFactorMul -= homeCards * 0.4;
         awayFactorMul -= awayCards * 0.4;
     }
-
-    // 0.15 → ~16% lambda boost (mirrors real bookmaker market moves)
-    var homeFactorMul = 1 + compositeDelta * 0.55;
-    var awayFactorMul = 1 - compositeDelta * 0.55;
 
     // Knockout tightening (lower variance) + slight underdog compression
     var stage = context.stage || 'group';
@@ -1081,29 +1081,35 @@
     // Reset forms and dynamic stats
     var codes = Object.keys(this.teams);
     for (var i=0; i<codes.length; i++) {
-        this.teams[codes[i]].form = []; // Clear hardcoded form
+        this.teams[codes[i]].recentForm = []; // Clear hardcoded form
     }
 
     for (var i=0; i<sorted.length; i++) {
        var f = sorted[i];
-       if (f.status === 'finished' && f.score && f.score.home !== null && f.score.away !== null) {
-           var hCode = typeof f.homeTeam === 'object' ? f.homeTeam.code : f.homeTeam;
-           var aCode = typeof f.awayTeam === 'object' ? f.awayTeam.code : f.awayTeam;
-           var home = this._getTeam(hCode);
-           var away = this._getTeam(aCode);
-           if (!home || !away) continue;
+       if (f.status === 'finished') {
+           var hScore = f.homeScore != null ? f.homeScore : (f.score && f.score.home);
+           var aScore = f.awayScore != null ? f.awayScore : (f.score && f.score.away);
+           
+           if (hScore != null && aScore != null) {
+               var hCode = typeof f.homeTeam === 'object' ? f.homeTeam.code : f.homeTeam;
+               var aCode = typeof f.awayTeam === 'object' ? f.awayTeam.code : f.awayTeam;
+               var home = this._getTeam(hCode);
+               var away = this._getTeam(aCode);
+               if (!home || !away) continue;
 
-           // Update ELO
-           this.updateElo(hCode, aCode, f.score.home, f.score.away, f.stage);
-           
-           // Update Form
-           var hRes = f.score.home > f.score.away ? 'W' : (f.score.home < f.score.away ? 'L' : 'D');
-           var aRes = f.score.home < f.score.away ? 'W' : (f.score.home > f.score.away ? 'L' : 'D');
-           
-           home.form.push(hRes);
-           away.form.push(aRes);
-           if (home.form.length > 5) home.form.shift();
-           if (away.form.length > 5) away.form.shift();
+               // Update ELO
+               this.updateElo(hCode, aCode, hScore, aScore, f.stage);
+               
+               // Update Form (1 for Win, 0.5 for Draw, 0 for Loss)
+               var hRes = hScore > aScore ? 1 : (hScore < aScore ? 0 : 0.5);
+               var aRes = hScore < aScore ? 1 : (hScore > aScore ? 0 : 0.5);
+               
+               home.recentForm.push(hRes);
+               away.recentForm.push(aRes);
+               // Keep only last 10 matches
+               if (home.recentForm.length > 10) home.recentForm.shift();
+               if (away.recentForm.length > 10) away.recentForm.shift();
+           }
        }
     }
   };
