@@ -68,6 +68,7 @@
           this.updateLoadingStatus('Đang tải dữ liệu trận đấu...');
           if (this.dataService) {
             this.matchesData = await this.dataService.fetchMatches();
+        this.lastUpdateTime = Date.now();
           }
         } catch (e) {
           console.error('[App] fetchMatches error:', e);
