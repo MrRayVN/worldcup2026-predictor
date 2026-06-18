@@ -1,0 +1,27 @@
+name: Update Match Data
+
+on:
+  schedule:
+    - cron: '*/5 * * * *' # Cập nhật mỗi 5 phút
+  workflow_dispatch: # Cho phép chạy thủ công
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Fetch API Data
+        env:
+          API_KEY: ${{ secrets.FOOTBALL_DATA_API_KEY }}
+        run: |
+          curl -s -H "X-Auth-Token: $API_KEY" https://api.football-data.org/v4/competitions/WC/matches > api-matches.json
+
+      - name: Commit and Push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add api-matches.json
+          git commit -m "Auto-update match data" || echo "No changes to commit"
+          git push

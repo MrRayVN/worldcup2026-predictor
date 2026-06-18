@@ -309,22 +309,25 @@
         matches = this.getEmbeddedMatches({}); // Complete local list (unfiltered)
 
         // API Fetch
-        if (this.apiAvailable.footballData !== false && this.API_CONFIG.footballData.headers['X-Auth-Token']) {
+        if (this.apiAvailable.footballData !== false) {
           try {
-            console.log('[DataService] 🌐 Đang tải dữ liệu từ football-data.org...');
-            const url = `${this.API_CONFIG.footballData.baseUrl}/competitions/${this.API_CONFIG.footballData.competitionId}/matches`;
-            const data = await this.httpGet(url, {
-              headers: this.API_CONFIG.footballData.headers
-            });
-
-            if (data && data.matches && data.matches.length > 0) {
-              this.mergeApiMatches(matches, data.matches);
-              this.apiAvailable.footballData = true;
-              console.log(`[DataService] ✅ Đã tích hợp thành công dữ liệu trực tiếp từ API`);
+            console.log('[DataService] 🌐 Đang tải dữ liệu từ api-matches.json (do GitHub Actions tạo)...');
+            // Thử tải từ file json tĩnh do Github Action tạo ra
+            const url = './api-matches.json';
+            const response = await fetch(url);
+            if (response.ok) {
+              const data = await response.json();
+              if (data && data.matches && data.matches.length > 0) {
+                this.mergeApiMatches(matches, data.matches);
+                this.apiAvailable.footballData = true;
+                console.log(`[DataService] ✅ Đã tích hợp thành công dữ liệu từ api-matches.json`);
+              }
+            } else {
+               console.warn('[DataService] ❌ api-matches.json không tồn tại (Có thể Github Actions chưa chạy).');
             }
           } catch (error) {
             this.apiAvailable.footballData = false;
-            console.warn('[DataService] ❌ Lỗi API, sử dụng dữ liệu nhúng:', error.message);
+            console.warn('[DataService] ❌ Lỗi khi đọc api-matches.json:', error.message);
           }
         }
 
