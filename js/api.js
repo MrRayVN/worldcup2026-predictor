@@ -20,9 +20,9 @@
         predictions: 15 * 60 * 1000     // 15 minutes for predictions
       };
 
-      // Allow API key from URL parameter: ?apikey=YOUR_KEY
+      // Allow API key from URL parameter: ?apikey=YOUR_KEY (overrides default)
       const urlParams = new URLSearchParams(window.location.search);
-      const userApiKey = urlParams.get('apikey') || urlParams.get('api_key') || '';
+      const userApiKey = urlParams.get('apikey') || urlParams.get('api_key') || 'ca35c74cbd8d4174af21cf360d47d1e9';
 
       // API endpoints (free tier, will fallback if unavailable)
       this.API_CONFIG = {
