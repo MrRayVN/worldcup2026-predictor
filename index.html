@@ -258,9 +258,12 @@
                  <span class="ai-badge-dot" style="width:8px; height:8px; background:white; border-radius:50%; animation: pulse-red 2s infinite;"></span>
                  AI NHẬN ĐỊNH
              </span>
-             <button id="ask-gemini-btn" class="action-btn" style="background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899); color: white; padding: 8px 16px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3); transition: transform 0.2s;">
-                ✨ Xin ý kiến Chuyên gia Gemini
-             </button>
+             <div style="display: flex; gap: 10px; align-items: center;">
+                 <button id="ask-gemini-btn" class="action-btn" style="background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899); color: white; padding: 8px 16px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3); transition: transform 0.2s;">
+                    ✨ Xin ý kiến Chuyên gia Gemini
+                 </button>
+                 <a href="#" onclick="localStorage.removeItem('gemini_api_key'); alert('Đã xóa API Key cũ. Hãy bấm Xin ý kiến để nhập lại.'); return false;" style="font-size: 0.8rem; color: var(--text-muted); text-decoration: underline;">Đổi API Key</a>
+             </div>
           </div>
           <div id="ai-report-content" style="min-height: 80px; position: relative;">
               <p id="ai-report-text" class="ai-report-text" style="font-size: 0.95rem; line-height: 1.6; color: var(--text-secondary); margin: 0;"></p>
