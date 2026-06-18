@@ -246,6 +246,11 @@
         refreshBtn.addEventListener('click', () => this.manualRefresh());
       }
 
+      // Trigger GitHub Action button
+      const triggerBtn = document.getElementById('trigger-action-btn');
+      if (triggerBtn) {
+        triggerBtn.addEventListener('click', () => this.triggerLiveUpdate());
+      }
       // Keyboard shortcut: 1-4 for tabs
       document.addEventListener('keydown', (e) => {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
@@ -272,6 +277,44 @@
       localStorage.setItem('wc2026-theme', theme);
       const btn = document.getElementById('theme-toggle');
       if (btn) btn.textContent = theme === 'light' ? '☀️' : '🌙';
+    }
+
+    async triggerLiveUpdate() {
+      let token = localStorage.getItem('github_pat');
+      if (!token) {
+        token = prompt("Lần đầu sử dụng: Vui lòng nhập GitHub Personal Access Token (PAT) của bạn để cho phép kích hoạt Workflow:");
+        if (!token) return;
+        localStorage.setItem('github_pat', token);
+      }
+      
+      this.showToast('🚀 Đang kích hoạt máy chủ GitHub cập nhật...', 'info', 3000);
+      try {
+        const response = await fetch('https://api.github.com/repos/MrRayVN/worldcup2026-predictor/actions/workflows/update-api.yml/dispatches', {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/vnd.github+json',
+            'Authorization': `Bearer ${token}`,
+            'X-GitHub-Api-Version': '2022-11-28'
+          },
+          body: JSON.stringify({ ref: 'main' })
+        });
+        
+        if (response.ok) {
+          this.showToast('✅ Đã kích hoạt GitHub. Vui lòng chờ 15s để lấy data mới...', 'success', 5000);
+          setTimeout(() => {
+             this.manualRefresh();
+          }, 15000); // Đợi Action chạy xong
+        } else {
+          if(response.status === 401 || response.status === 403) {
+             localStorage.removeItem('github_pat');
+             this.showToast('❌ Token không hợp lệ hoặc hết hạn. Vui lòng thử lại.', 'error', 4000);
+          } else {
+             this.showToast('❌ Lỗi kích hoạt: ' + response.status, 'error', 4000);
+          }
+        }
+      } catch(err) {
+        this.showToast('❌ Lỗi kết nối: ' + err.message, 'error', 4000);
+      }
     }
 
     async manualRefresh() {
