@@ -1626,11 +1626,19 @@
       });
 
       if (!response.ok) {
+         let errorMsg = 'Lỗi máy chủ Gemini: ' + response.status;
+         try {
+             const errorData = await response.json();
+             if (errorData.error && errorData.error.message) {
+                 errorMsg = `[Lỗi API ${response.status}] ${errorData.error.message}`;
+             }
+         } catch(e) {}
+         
          if (response.status === 400 || response.status === 403) {
             localStorage.removeItem('gemini_api_key');
-            throw new Error('API Key không hợp lệ hoặc đã hết hạn.');
+            throw new Error(errorMsg + ' (API Key không hợp lệ hoặc đã hết hạn.)');
          }
-         throw new Error('Lỗi máy chủ Gemini: ' + response.status);
+         throw new Error(errorMsg);
       }
 
       const data = await response.json();
