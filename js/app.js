@@ -280,36 +280,46 @@
     }
 
     async triggerLiveUpdate() {
-      let token = localStorage.getItem('github_pat');
+      let token = localStorage.getItem('api_football_key') || '81ffaf08b3a7e0eeba122a3e53b1fa0b'; // Mặc định dùng key được cấp
       if (!token) {
-        token = prompt("Lần đầu sử dụng: Vui lòng nhập GitHub Personal Access Token (PAT) của bạn để cho phép kích hoạt Workflow:");
+        token = prompt("Vui lòng nhập API Key của API-Football (v3.football.api-sports.io) để lấy Live Data:");
         if (!token) return;
-        localStorage.setItem('github_pat', token);
+        localStorage.setItem('api_football_key', token);
       }
       
-      this.showToast('🚀 Đang kích hoạt máy chủ GitHub cập nhật...', 'info', 3000);
+      this.showToast('🚀 Đang lấy dữ liệu Live trực tiếp từ API-Football...', 'info', 3000);
       try {
-        const response = await fetch('https://api.github.com/repos/MrRayVN/worldcup2026-predictor/actions/workflows/update-api.yml/dispatches', {
-          method: 'POST',
+        // Gọi API lấy các trận đang đá (live=all)
+        const response = await fetch('https://v3.football.api-sports.io/fixtures?live=all', {
+          method: 'GET',
           headers: {
-            'Accept': 'application/vnd.github+json',
-            'Authorization': `Bearer ${token}`,
-            'X-GitHub-Api-Version': '2022-11-28'
-          },
-          body: JSON.stringify({ ref: 'main' })
+            'x-apisports-key': token
+          }
         });
         
         if (response.ok) {
-          this.showToast('✅ Đã kích hoạt GitHub. Vui lòng chờ 15s để lấy data mới...', 'success', 5000);
-          setTimeout(() => {
-             this.manualRefresh();
-          }, 15000); // Đợi Action chạy xong
+          const data = await response.json();
+          if (data.errors && Object.keys(data.errors).length > 0) {
+             this.showToast('❌ Lỗi API: ' + Object.values(data.errors)[0], 'error', 4000);
+             return;
+          }
+          
+          const liveMatches = data.response || [];
+          this.showToast(`✅ Cập nhật thành công. Có ${liveMatches.length} trận đang đá.`, 'success', 3000);
+          
+          // Tích hợp dữ liệu live này vào local memory
+          if (liveMatches.length > 0) {
+             this.dataService.mergeApiMatches(this.dataService.getCached('matches_all_' + new Date().toISOString().slice(0, 10)) || window.WC2026_DATA.fixtures, liveMatches);
+          }
+          
+          // Làm mới UI
+          this.manualRefresh();
         } else {
           if(response.status === 401 || response.status === 403) {
-             localStorage.removeItem('github_pat');
-             this.showToast('❌ Token không hợp lệ hoặc hết hạn. Vui lòng thử lại.', 'error', 4000);
+             localStorage.removeItem('api_football_key');
+             this.showToast('❌ API Key không hợp lệ. Vui lòng nhập lại.', 'error', 4000);
           } else {
-             this.showToast('❌ Lỗi kích hoạt: ' + response.status, 'error', 4000);
+             this.showToast('❌ Lỗi API: ' + response.status, 'error', 4000);
           }
         }
       } catch(err) {

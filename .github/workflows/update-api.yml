@@ -2,7 +2,7 @@ name: Update Match Data
 
 on:
   schedule:
-    - cron: '*/5 * * * *' # Cập nhật mỗi 5 phút
+    - cron: '0 * * * *' # Cập nhật mỗi 1 tiếng (24 requests/ngày) để tiết kiệm token
   workflow_dispatch: # Cho phép chạy thủ công
 
 jobs:
@@ -14,11 +14,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Fetch API Data
+      - name: Fetch API Data (API-Football)
         env:
           API_KEY: ${{ secrets.FOOTBALL_DATA_API_KEY }}
         run: |
-          curl -s -H "X-Auth-Token: $API_KEY" https://api.football-data.org/v4/competitions/WC/matches > api-matches.json
+          curl -s -H "x-apisports-key: $API_KEY" "https://v3.football.api-sports.io/fixtures?league=1&season=2026" > api-matches.json
 
       - name: Commit and Push changes
         run: |
